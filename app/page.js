@@ -1261,10 +1261,6 @@ export default function TrangQuanLyChuyenSau() {
             </div>
           );
         })()}
-
-      </div>
-    </>
-  );
 {/* MODAL XÁC NHẬN XÓA CHUẨN UX/UI */}
         {deletingTaskId && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
@@ -1289,6 +1285,10 @@ export default function TrangQuanLyChuyenSau() {
             </div>
           </div>
         )}
+      </div>
+    </>
+  );
+
   function PendingDocCard({ task, index, isEditor }) {
     const files = getSafeArray(task.attachments);
     const firstFile = files.length > 0 ? files[0] : { name: task.title, url: '' };
