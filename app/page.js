@@ -490,10 +490,37 @@ export default function TrangQuanLyChuyenSau() {
     setOrders(nextOrders);
     localStorage.setItem(storageKey, JSON.stringify(nextOrders));
   };
-function xoaTaskNhanh(taskId) {
-      if (!isEditor) return; // Khóa bảo vệ: Không phải Editor/Admin thì không được xóa
-      if(confirm('Xóa vĩnh viễn dữ liệu này?')) {
-          supabase.from('tasks').delete().eq('id', taskId).then(() => taiDuLieuHienTai());
+async function xoaTaskNhanh(taskId) {
+      if (!isEditor) return;
+      if(confirm('Xóa vĩnh viễn công việc này (Bao gồm cả các tệp đính kèm)?')) {
+          // 1. Tạm thời ẩn ngay lập tức khỏi màn hình (tạo độ mượt)
+          setTasks(prev => prev.filter(t => t.id !== taskId));
+          
+          // 2. Tìm công việc cần xóa để truy quét tệp đính kèm
+          const taskToDelete = tasks.find(t => t.id === taskId);
+          
+          // 3. Tiến hành xóa tệp đính kèm trên Storage để dọn rác
+          if (taskToDelete && taskToDelete.attachments) {
+              const files = getSafeArray(taskToDelete.attachments);
+              for (let file of files) {
+                  if (file.url) {
+                      // Tách lấy tên file gốc từ đường link URL
+                      const urlParts = file.url.split('/');
+                      const fileName = urlParts[urlParts.length - 1];
+                      // Bắn lệnh xóa vĩnh viễn file trên hệ thống
+                      await supabase.storage.from('task-attachments').remove([fileName]);
+                  }
+              }
+          }
+          
+          // 4. Bắn lệnh xóa dữ liệu công việc trong Cơ sở dữ liệu
+          const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+          
+          if (error) {
+              // 5. Nếu Supabase từ chối, báo lỗi cho người dùng và hoàn tác lại màn hình
+              alert('Lỗi: Hệ thống từ chối xóa công việc này! Nguyên nhân: ' + error.message);
+              taiDuLieuHienTai();
+          }
       }
   }
   const handleTaskMouseMove = (e) => {
