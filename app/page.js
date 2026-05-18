@@ -66,6 +66,8 @@ export default function TrangQuanLyChuyenSau() {
   const [quickNoteText, setQuickNoteText] = useState('')
   const [editingNoteIndex, setEditingNoteIndex] = useState(null)
   const [editingNoteText, setEditingNoteText] = useState('')
+  const [deletingTaskId, setDeletingTaskId] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
@@ -490,37 +492,42 @@ export default function TrangQuanLyChuyenSau() {
     setOrders(nextOrders);
     localStorage.setItem(storageKey, JSON.stringify(nextOrders));
   };
-async function xoaTaskNhanh(taskId) {
+// 1. Hàm này chỉ dùng để kích hoạt bảng thông báo UI
+  function xoaTaskNhanh(taskId) {
       if (!isEditor) return;
-      if(confirm('Xóa vĩnh viễn công việc này (Bao gồm cả các tệp đính kèm)?')) {
-          // 1. Tạm thời ẩn ngay lập tức khỏi màn hình (tạo độ mượt)
-          setTasks(prev => prev.filter(t => t.id !== taskId));
+      setDeletingTaskId(taskId); // Gắn ID để mở bảng Modal
+  }
+
+  // 2. Hàm này thực thi việc xóa vĩnh viễn khi bấm Xác nhận trên bảng Modal
+  async function thucHienXoaTask() {
+      if (!isEditor || !deletingTaskId) return;
+      setIsDeleting(true); // Đổi nút thành "Đang xóa..." để tránh bấm đúp
+      
+      try {
+          const taskToDelete = tasks.find(t => t.id === deletingTaskId);
+          setTasks(prev => prev.filter(t => t.id !== deletingTaskId)); // Ẩn khỏi màn hình trước cho mượt
           
-          // 2. Tìm công việc cần xóa để truy quét tệp đính kèm
-          const taskToDelete = tasks.find(t => t.id === taskId);
-          
-          // 3. Tiến hành xóa tệp đính kèm trên Storage để dọn rác
           if (taskToDelete && taskToDelete.attachments) {
               const files = getSafeArray(taskToDelete.attachments);
               for (let file of files) {
                   if (file.url) {
-                      // Tách lấy tên file gốc từ đường link URL
                       const urlParts = file.url.split('/');
                       const fileName = urlParts[urlParts.length - 1];
-                      // Bắn lệnh xóa vĩnh viễn file trên hệ thống
                       await supabase.storage.from('task-attachments').remove([fileName]);
                   }
               }
           }
           
-          // 4. Bắn lệnh xóa dữ liệu công việc trong Cơ sở dữ liệu
-          const { error } = await supabase.from('tasks').delete().eq('id', taskId);
-          
+          const { error } = await supabase.from('tasks').delete().eq('id', deletingTaskId);
           if (error) {
-              // 5. Nếu Supabase từ chối, báo lỗi cho người dùng và hoàn tác lại màn hình
-              alert('Lỗi: Hệ thống từ chối xóa công việc này! Nguyên nhân: ' + error.message);
+              alert('Lỗi: Hệ thống từ chối xóa! ' + error.message);
               taiDuLieuHienTai();
           }
+      } catch (err) {
+          console.error(err);
+      } finally {
+          setIsDeleting(false); // Trả lại trạng thái nút
+          setDeletingTaskId(null); // Đóng bảng Modal
       }
   }
   const handleTaskMouseMove = (e) => {
@@ -1258,7 +1265,30 @@ async function xoaTaskNhanh(taskId) {
       </div>
     </>
   );
-
+{/* MODAL XÁC NHẬN XÓA CHUẨN UX/UI */}
+        {deletingTaskId && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className={`relative w-full max-w-sm rounded-3xl shadow-2xl p-6 ${theme === 'dark' ? 'bg-[#1a1a24] border border-white/10 text-white' : 'bg-white border border-gray-200 text-slate-800'} animate-in zoom-in-95 duration-200`}>
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <h3 className="text-xl font-bold mb-2">Xóa vĩnh viễn?</h3>
+                <p className={`text-sm mb-6 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Công việc này và toàn bộ tài liệu đính kèm sẽ bị xóa hoàn toàn khỏi hệ thống. Bạn không thể hoàn tác hành động này!
+                </p>
+                <div className="flex gap-3 w-full">
+                  <button disabled={isDeleting} onClick={() => setDeletingTaskId(null)} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-colors ${theme === 'dark' ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}>
+                    Hủy bỏ
+                  </button>
+                  <button disabled={isDeleting} onClick={thucHienXoaTask} className="flex-1 py-3 rounded-xl text-sm font-bold bg-red-500 hover:bg-red-600 text-white transition-colors flex justify-center items-center shadow-lg shadow-red-500/30">
+                    {isDeleting ? 'Đang xử lý...' : 'Đồng ý Xóa'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
   function PendingDocCard({ task, index, isEditor }) {
     const files = getSafeArray(task.attachments);
     const firstFile = files.length > 0 ? files[0] : { name: task.title, url: '' };
