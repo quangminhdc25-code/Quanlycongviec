@@ -38,6 +38,16 @@ function getFileIcon(filename, size = 'small') {
 export default function TrangQuanLyChuyenSau() {
   const [projects, setProjects] = useState([])
   const [tasks, setTasks] = useState([])
+  const [currentSpace, setCurrentSpace] = useState('shared'); // 'shared' (Ngôi nhà chung) hoặc 'private' (Căn phòng riêng)
+  const [isSharedInput, setIsSharedInput] = useState(true); // Trạng thái công tắc khi tạo việc mới
+  // Bộ lọc thông minh tách biệt giữa phòng riêng và nhà chung
+  const hienThiTasks = tasks.filter(task => {
+      if (currentSpace === 'shared') {
+          return task.is_shared === true; // Chỉ hiện việc công khai ở Ngôi nhà chung
+      } else {
+          return task.is_shared === false; // Chỉ hiện việc cá nhân ở Căn phòng riêng
+      }
+  });
   const [loading, setLoading] = useState(true)
   const [theme, setTheme] = useState('light')
   
@@ -250,7 +260,7 @@ export default function TrangQuanLyChuyenSau() {
     if (!query.trim()) { setSearchResults([]); setIsSearchOpen(false); return; }
     
     const lowerQuery = query.toLowerCase();
-    const results = tasks.filter(task => {
+    const results = hienThiTasks.filter(task => {
       const matchTitle = task.title?.toLowerCase().includes(lowerQuery);
       const matchDesc = task.description?.toLowerCase().includes(lowerQuery);
       const safeNotes = getSafeArray(task.notes);
@@ -290,8 +300,7 @@ export default function TrangQuanLyChuyenSau() {
     await supabase.from('projects').update({ title: editProjectName }).eq('id', id);
   }
 
-  function moModalTaoMoi(projectId) {
-    if (!isEditor) return;
+function moModalTaoMoi(projectId) {
     setActiveProjectId(projectId); setTaskTitle(''); setTaskDesc(''); setTaskDeadline(''); setTaskFiles([]);
     setModalType('task_new');
   }
@@ -319,14 +328,15 @@ export default function TrangQuanLyChuyenSau() {
       const { error: upError } = await supabase.storage.from('task-attachments').upload(fileName, file);
       if (!upError) {
         const { data: urlData } = supabase.storage.from('task-attachments').getPublicUrl(fileName);
-        const taskData = {
+const taskData = {
           title: file.name, 
           description: '',
           due_date: null,
           attachments: [{ name: file.name, url: urlData.publicUrl, type: 'input' }], 
           notes: [], 
           project_id: selectedProjectId, 
-          status: 'pending'
+          status: 'pending',
+          is_shared: isEditor ? isSharedInput : false
         };
         await supabase.from('tasks').insert([taskData]);
       }
@@ -336,11 +346,11 @@ export default function TrangQuanLyChuyenSau() {
     setTimeout(() => { setIsUploadingPending(false); setPendingUploadProgress(0); taiDuLieuHienTai(); }, 400);
   }
 
-  async function handleTaoTaskMoi(e) {
-    e.preventDefault(); 
-    if (!isEditor) return;
+async function xuLyTaoViecMoi(e) {
+    e.preventDefault();
     setLoading(true);
     let attachments = [];
+    
     if (taskFiles.length > 0) {
       setIsUploading(true); setUploadProgress(10);
       const progressInterval = setInterval(() => { setUploadProgress(prev => (prev < 90 ? prev + 15 : prev)); }, 300);
@@ -357,13 +367,23 @@ export default function TrangQuanLyChuyenSau() {
       await new Promise(resolve => setTimeout(resolve, 400));
       setIsUploading(false); setUploadProgress(0);
     }
+    
     const taskData = {
       title: taskTitle, description: taskDesc,
       due_date: taskDeadline ? new Date(taskDeadline).toISOString() : null,
-      attachments, notes: [], project_id: activeProjectId, status: 'todo'
-    }
+      attachments, notes: [], project_id: activeProjectId, status: 'todo',
+      is_shared: isEditor ? isSharedInput : false
+    };
+    
     const { error: err } = await supabase.from('tasks').insert([taskData]);
-    if (!err) { dongModalTask(); taiDuLieuHienTai(); }
+    
+    if (err) { 
+      console.error("Lỗi Supabase:", err.message); // Chuyển lỗi xuống nền ngầm, không hiện ra ngoài làm phiền người dùng
+    } else { 
+      dongModalTask(); 
+      taiDuLieuHienTai(); 
+      setCurrentSpace('private'); // Lệnh xịn sò: Tự động đưa người dùng về xem Căn phòng riêng!
+    }
     setLoading(false);
   }
 
@@ -389,8 +409,9 @@ export default function TrangQuanLyChuyenSau() {
     if (modalRef.current) modalRef.current.dataset.initialized = '';
   }
 
-  async function saveInlineEdit(field) {
-    if (!isEditor || !viewingTask) return;
+async function saveInlineEdit(field) {
+    const quyenSua = isEditor || currentSpace === 'private';
+    if (!quyenSua || !viewingTask) return;
     let finalValue = tempValue;
     if (field === 'due_date' && tempValue) finalValue = new Date(tempValue).toISOString();
     const updatedTask = { ...viewingTask, [field]: finalValue };
@@ -399,34 +420,49 @@ export default function TrangQuanLyChuyenSau() {
     setEditField(null);
   }
 
-  async function handleInlineUpload(e, fileType = 'input', droppedFiles = null) {
-    if (!isEditor) return;
+async function handleInlineUpload(e, fileType = 'input', droppedFiles = null) {
+    const quyenSua = isEditor || currentSpace === 'private';
+    if (!quyenSua) return;
+    
     const files = droppedFiles ? Array.from(droppedFiles) : Array.from(e.target.files);
     if (!files.length) return;
+    
     setIsUploading(true); setUploadProgress(10);
     let newAttachments = [...getSafeArray(viewingTask.attachments)];
     const progressInterval = setInterval(() => { setUploadProgress(prev => (prev < 90 ? prev + 15 : prev)); }, 300);
+    
     for (let file of files) {
       const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
       const fileName = `${Date.now()}-${safeName}`;
       const { error: upError } = await supabase.storage.from('task-attachments').upload(fileName, file);
-      if (!upError) {
+      
+      if (upError) {
+        // NẾU SUPABASE CHẶN FILE, CHUÔNG SẼ RÉO LÊN Ở ĐÂY!
+        alert("Lỗi kho chứa Supabase: " + upError.message);
+      } else {
         const { data: urlData } = supabase.storage.from('task-attachments').getPublicUrl(fileName);
         newAttachments.push({ name: file.name, url: urlData.publicUrl, type: fileType });
       }
     }
+    
     clearInterval(progressInterval); setUploadProgress(100);
     const updatedTask = { ...viewingTask, attachments: newAttachments };
     setViewingTask(updatedTask); setTasks(prev => prev.map(t => t.id === viewingTask.id ? updatedTask : t));
-    await supabase.from('tasks').update({ attachments: newAttachments }).eq('id', viewingTask.id);
+    
+    const { error: dbErr } = await supabase.from('tasks').update({ attachments: newAttachments }).eq('id', viewingTask.id);
+    if (dbErr) {
+        alert("Lỗi lưu data: " + dbErr.message);
+    }
+    
     setTimeout(() => { setIsUploading(false); setUploadProgress(0); }, 400);
   }
 
   const handleDropFileInput = (e) => { e.preventDefault(); e.stopPropagation(); handleInlineUpload(null, 'input', e.dataTransfer.files); };
   const handleDropFileOutput = (e) => { e.preventDefault(); e.stopPropagation(); handleInlineUpload(null, 'output', e.dataTransfer.files); };
 
-  function handleInlineDeleteFile(fileUrl) {
-    if (!isEditor) return;
+function handleInlineDeleteFile(fileUrl) {
+    const quyenSua = isEditor || currentSpace === 'private';
+    if (!quyenSua) return;
     if(confirm('Xóa tệp đính kèm này khỏi hệ thống?')) {
       let newAttachments = getSafeArray(viewingTask.attachments).filter(f => f.url !== fileUrl);
       const updatedTask = { ...viewingTask, attachments: newAttachments };
@@ -436,8 +472,9 @@ export default function TrangQuanLyChuyenSau() {
     }
   }
 
-  async function handleAddQuickNote() {
-    if (!isEditor || !quickNoteText.trim() || !viewingTask) return;
+async function handleAddQuickNote() {
+    const quyenSua = isEditor || currentSpace === 'private';
+    if (!quyenSua || !quickNoteText.trim() || !viewingTask) return;
     const newNote = { text: quickNoteText.trim(), created_at: new Date().toISOString() };
     const updatedNotes = [...getSafeArray(viewingTask.notes), newNote];
     const updatedTask = { ...viewingTask, notes: updatedNotes };
@@ -446,8 +483,9 @@ export default function TrangQuanLyChuyenSau() {
     await supabase.from('tasks').update({ notes: updatedNotes }).eq('id', viewingTask.id);
   }
 
-  function handleDeleteNote(idx) {
-    if (!isEditor) return;
+function handleDeleteNote(idx) {
+    const quyenSua = isEditor || currentSpace === 'private';
+    if (!quyenSua) return;
     if(confirm('Xóa ghi chú này?')) {
       const updatedNotes = [...getSafeArray(viewingTask.notes)];
       updatedNotes.splice(idx, 1);
@@ -559,7 +597,7 @@ export default function TrangQuanLyChuyenSau() {
   };
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
-  const projectTasks = selectedProject ? tasks.filter(t => t.project_id === selectedProject.id) : [];
+  const projectTasks = selectedProject ? hienThiTasks.filter(t => t.project_id === selectedProject.id) : [];
   
   const allPendingRaw = projectTasks.filter(t => t.status === 'pending');
   const allTodoRaw = projectTasks.filter(t => t.status === 'todo' || (!t.status && !t.is_completed));
@@ -672,7 +710,7 @@ export default function TrangQuanLyChuyenSau() {
                   <button onClick={() => setSelectedProjectId(project.id)} className={`w-full text-left px-3 py-2 rounded-xl transition-all text-sm font-semibold flex items-center justify-between ${selectedProjectId === project.id ? (theme === 'dark' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/20' : 'bg-blue-600 text-white shadow-md border border-transparent') : (theme === 'dark' ? 'hover:bg-white/5 text-slate-300 border border-transparent' : 'hover:bg-white/50 text-slate-700 border border-transparent')}`}>
                     <span className="truncate pr-2 text-[13px]">{index + 1}. {project.title}</span>
                     <div className="relative w-6 h-5 flex items-center justify-end shrink-0 overflow-hidden">
-                        <span className={`absolute transition-all duration-200 group-hover:opacity-0 group-hover:translate-x-4 text-[9px] px-1.5 py-0.5 rounded-full font-bold ${selectedProjectId === project.id ? (theme === 'dark' ? 'bg-blue-500 text-white' : 'bg-blue-400 text-white') : (theme === 'dark' ? 'bg-white/10' : 'bg-black/5')}`}>{tasks.filter(t => t.project_id === project.id).length}</span>
+                        <span className={`absolute transition-all duration-200 group-hover:opacity-0 group-hover:translate-x-4 text-[9px] px-1.5 py-0.5 rounded-full font-bold ${selectedProjectId === project.id ? (theme === 'dark' ? 'bg-blue-500 text-white' : 'bg-blue-400 text-white') : (theme === 'dark' ? 'bg-white/10' : 'bg-black/5')}`}>{hienThiTasks.filter(t => t.project_id === project.id).length}</span>
                         {isEditor && (
                           <span onClick={(e) => { e.stopPropagation(); setEditingProjectId(project.id); setEditProjectName(project.title); }} className={`absolute transition-all duration-200 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 p-1 rounded-md hover:bg-black/10 dark:hover:bg-white/20 text-xs ${selectedProjectId === project.id ? (theme === 'dark' ? 'text-blue-400' : 'text-white') : textMuted}`}>✎</span>
                         )}
@@ -764,12 +802,35 @@ export default function TrangQuanLyChuyenSau() {
                 <div className="mb-4 shrink-0">
                   <div className="flex justify-between items-center mb-3">
                     <h2 className="text-2xl font-extrabold tracking-tight">{selectedProject.title}</h2>
-                    {isEditor && (
-                      <div className="flex gap-2 shrink-0">
-                        <button onClick={() => moModalTaoMoi(selectedProject.id)} className={`px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm ${theme === 'dark' ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>+ Thêm công việc</button>
-                        <button onClick={() => xoaMangCongViec(selectedProject.id)} className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${theme === 'dark' ? 'text-red-400 bg-red-500/10 hover:bg-red-500/20' : 'text-red-500 bg-white/50 hover:bg-white text-red-600 border border-white/60'}`}>Xóa mảng</button>
+                    {/* KHÔNG GIAN CHO TẤT CẢ MỌI NGƯỜI */}
+                    <div className="flex justify-center mb-6 w-full fade-in zoom-in-95 animate-in duration-300">
+                      <div className={`p-1.5 rounded-2xl flex gap-2 shadow-inner ${theme === 'dark' ? 'bg-[#181a20] border border-white/5' : 'bg-slate-100 border border-gray-200'}`}>
+                        <button 
+                          onClick={() => setCurrentSpace('shared')}
+                          className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${currentSpace === 'shared' ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20' : theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-white'}`}
+                        >
+                          🏠 Ngôi nhà chung
+                        </button>
+                        <button 
+                          onClick={() => setCurrentSpace('private')}
+                          className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${currentSpace === 'private' ? 'bg-purple-500 text-white shadow-md shadow-purple-500/20' : theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-white'}`}
+                        >
+                          🔑 Căn phòng riêng
+                        </button>
                       </div>
-                    )}
+                    </div>
+                    
+                    {/* NÚT BẤM ĐƯỢC PHÂN QUYỀN */}
+                    <div className="flex gap-2 shrink-0">
+                     {/* Nút Thêm: Admin/Editor luôn thấy, Cấp 3 chỉ thấy ở Căn phòng riêng */}
+                      {(isEditor || currentSpace === 'private') && (
+                        <button onClick={() => moModalTaoMoi(selectedProject.id)} className={`px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm ${theme === 'dark' ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>+ Thêm công việc</button>
+                      )}
+                      {/* Nút Xóa: Chỉ Admin/Editor mới thấy */}
+                      {isEditor && (
+                        <button onClick={() => xoaMangCongViec(selectedProject.id)} className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${theme === 'dark' ? 'text-red-400 bg-red-500/10 hover:bg-red-500/20' : 'text-red-500 bg-white/50 hover:bg-white text-red-600 border border-white/60'}`}>Xóa mảng</button>
+                      )}
+                    </div>
                   </div>
                   {viewMode === 'kanban' && (
                     <div className={`p-3 rounded-xl transition-all ${theme === 'dark' ? 'bg-white/5 border border-white/5' : 'bg-white/60 border border-white/50 shadow-sm'}`}>
@@ -1061,18 +1122,33 @@ export default function TrangQuanLyChuyenSau() {
         </main>
 
         {/* MODAL MẢNG / TẠO MỚI */}
-        {(modalType === 'project' || modalType === 'task_new') && isEditor && (
+        {(modalType === 'project' || modalType === 'task_new') && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in duration-200">
             <div className={`relative rounded-2xl shadow-2xl p-6 w-full ${modalType === 'project' ? 'max-w-md' : 'max-w-2xl'} ${theme === 'dark' ? 'bg-[#1a1a24] border border-white/10 text-white' : 'bg-white border border-gray-200 text-slate-800'}`}>
               <button onClick={dongModalTask} className={`absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all ${theme === 'dark' ? 'bg-white/10 hover:bg-red-500 text-white' : 'bg-slate-200 hover:bg-red-50 hover:text-red-600 text-slate-600'}`}>✕</button>
               <h2 className="text-xl font-bold mb-4">{modalType === 'project' ? 'Tạo kế hoạch mới' : 'Thêm công việc mới'}</h2>
+              {/* CÔNG TẮC: CHỈ HIỆN VỚI NGƯỜI DÙNG CẤP 1 VÀ 2, ẨN VỚI CẤP 3 */}
+            {isEditor && modalType === 'task_new' && (
+              <div className="flex items-center justify-between p-3 rounded-xl border border-dashed border-gray-200 dark:border-white/10 mb-4 bg-blue-50/50 dark:bg-blue-900/10">
+                <div>
+                  <p className="text-sm font-bold">Đăng lên Ngôi nhà chung?</p>
+                  <p className="text-xs text-gray-500">Tắt công tắc này để chỉ mình bạn nhìn thấy (Căn phòng riêng)</p>
+                </div>
+                <input 
+                  type="checkbox" 
+                  checked={isSharedInput} 
+                  onChange={(e) => setIsSharedInput(e.target.checked)}
+                  className="w-5 h-5 accent-blue-500 cursor-pointer"
+                />
+              </div>
+            )}
               {modalType === 'project' ? (
                 <form onSubmit={luuMangCongViec}>
                   <input autoFocus required value={projectTitle} onChange={e => setProjectTitle(e.target.value)} placeholder="Nhập tên kế hoạch..." className={`w-full p-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none mb-4 font-normal ${theme === 'dark' ? 'bg-black/30 border-white/10 text-white' : 'bg-white/70 border-gray-200 text-slate-800'}`} />
                   <div className="flex justify-end gap-3"><button type="button" onClick={dongModalTask} className="px-5 py-2 font-bold text-sm rounded-full">Hủy</button><button type="submit" className="px-5 py-2 rounded-full text-sm font-bold bg-blue-600 text-white">Xác nhận</button></div>
                 </form>
               ) : (
-                <form onSubmit={handleTaoTaskMoi} className="space-y-4">
+                <form onSubmit={xuLyTaoViecMoi} className="space-y-4">
                   <input required value={taskTitle} onChange={e => setTaskTitle(e.target.value)} placeholder="Tên công việc..." className={`w-full p-3 rounded-xl border focus:ring-2 focus:ring-blue-500 text-base font-normal outline-none ${theme === 'dark' ? 'bg-[#121212] border-white/20 text-white' : 'bg-white border-gray-300 text-slate-800'}`} />
                   <div><label className="text-[10px] font-bold uppercase tracking-wider mb-1.5 block opacity-50">Mô tả</label>
                   <textarea rows="3" value={taskDesc} onChange={e => setTaskDesc(e.target.value)} placeholder="Nhập mô tả chi tiết..." className={`w-full p-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none ${theme === 'dark' ? 'bg-[#121212] border-white/20 text-white' : 'bg-white border-gray-300 text-slate-800'}`} /></div>
@@ -1093,7 +1169,20 @@ export default function TrangQuanLyChuyenSau() {
                       {!isUploading && taskFiles.length > 0 && <div className="mt-1.5 text-[10px] font-bold text-green-500">Đã chọn {taskFiles.length} tệp</div>}
                     </div>
                   </div>
-                  <div className={`flex justify-end gap-3 pt-4 border-t ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'}`}><button type="button" onClick={dongModalTask} className="px-5 py-2 text-sm font-bold">Hủy</button><button type="submit" disabled={isUploading || loading} className="px-5 py-2 rounded-full text-sm font-bold bg-blue-600 text-white shadow-md hover:bg-blue-500">{isUploading ? 'Đang tải...' : 'Tạo mới'}</button></div>
+                 <div className={`flex justify-end gap-3 pt-4 border-t ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'}`}>
+                      <button type="button" onClick={dongModalTask} className="px-5 py-2 text-sm font-bold">Hủy</button>
+                      <button 
+                        type="button" 
+                        onClick={(e) => { 
+                          e.preventDefault();
+                        
+                          xuLyTaoViecMoi(e); 
+                        }} 
+                        className="px-5 py-2 rounded-full text-sm font-bold bg-blue-600 text-white shadow-md hover:bg-blue-500"
+                      >
+                        {isUploading ? 'Đang tải...' : 'Tạo mới'}
+                      </button>
+                    </div>
                 </form>
               )}
             </div>
@@ -1128,139 +1217,142 @@ export default function TrangQuanLyChuyenSau() {
         )}
 
         {/* MODAL CHI TIẾT CÔNG VIỆC CHUẨN */}
-        {modalType === 'task_view' && viewingTask && (() => {
-          const viewNotes = getSafeArray(viewingTask.notes);
-          const viewAttachments = getSafeArray(viewingTask.attachments);
-          
-          const inputFiles = viewAttachments.filter(f => f.type !== 'output');
-          const outputFiles = viewAttachments.filter(f => f.type === 'output');
-          
-          return (
-            <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-              <div 
-                ref={modalRef}
-                className={`absolute flex flex-col md:flex-row rounded-2xl overflow-hidden shadow-2xl border animate-in zoom-in-95 duration-200 ${theme === 'dark' ? 'bg-[#1a1a24]/95 border-white/10 text-white' : 'bg-white/95 border-white/50 text-slate-800'}`}
-                style={{ resize: 'both', minWidth: '600px', minHeight: '400px' }}
-              >
+          {modalType === 'task_view' && viewingTask && (() => {
+            const viewNotes = getSafeArray(viewingTask.notes);
+            const viewAttachments = getSafeArray(viewingTask.attachments);
+            
+            const inputFiles = viewAttachments.filter(f => f.type !== 'output');
+            const outputFiles = viewAttachments.filter(f => f.type === 'output');
+            
+            // ĐÂY LÀ CHÌA KHÓA: Cho phép Cấp 3 sửa nếu đang ở Căn phòng riêng
+            const quyenSua = isEditor || currentSpace === 'private';
+            
+            return (
+              <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
                 <div 
-                   className={`absolute top-0 left-0 w-full h-6 cursor-move flex items-center justify-center z-[110] transition-colors ${theme === 'dark' ? 'bg-black/40 hover:bg-black/60' : 'bg-slate-200 hover:bg-slate-300'}`}
-                   onMouseDown={handleModalDragStart}
-                   title="Kéo thả để di chuyển"
+                  ref={modalRef}
+                  className={`absolute flex flex-col md:flex-row rounded-2xl overflow-hidden shadow-2xl border animate-in zoom-in-95 duration-200 ${theme === 'dark' ? 'bg-[#1a1a24]/95 border-white/10 text-white' : 'bg-white/95 border-white/50 text-slate-800'}`}
+                  style={{ resize: 'both', minWidth: '600px', minHeight: '400px' }}
                 >
-                    <div className="w-10 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500"></div>
-                </div>
-
-                <div className={`w-full md:w-[45%] flex flex-col border-r ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'} p-6 pt-10 space-y-6 overflow-y-auto custom-scrollbar`} onMouseDown={(e) => e.stopPropagation()}>
-                    
-                    <div className="group relative">
-                      {editField === 'title' && isEditor ? (
-                        <div className="flex flex-col gap-2">
-                            <textarea value={tempValue} onChange={e => setTempValue(e.target.value)} rows="2" className={`w-full p-2 text-lg border rounded-xl outline-none ${theme === 'dark' ? 'bg-[#121212] border-white/20 text-white' : 'bg-white border-gray-300 text-slate-800'}`} />
-                            <div className="flex justify-end gap-2"><button onClick={() => setEditField(null)} className="px-3 py-1">Hủy</button><button onClick={() => saveInlineEdit('title')} className="px-3 py-1 bg-blue-600 text-white rounded-lg">Lưu</button></div>
-                        </div>
-                      ) : (
-                        <div className="flex justify-between items-start"><h2 className="text-xl font-normal leading-tight pr-8">{viewingTask.title}</h2>{isEditor && <button onClick={() => { setEditField('title'); setTempValue(viewingTask.title); }} className={`opacity-0 group-hover:opacity-100 text-[10px] font-bold px-2 py-1 rounded shrink-0 ${theme === 'dark' ? 'bg-white/10 text-white hover:bg-blue-600' : 'bg-slate-200 text-blue-600'}`}>✎ Sửa</button>}</div>
-                      )}
-                    </div>
-                    
-                    {/* HẠN CHÓT */}
-                    <div className="group relative flex items-center gap-2">
-                      <span className="text-[10px] font-bold uppercase tracking-widest opacity-50">Hạn chót:</span>
-                      {editField === 'due_date' && isEditor ? (
-                        <div className="flex items-center gap-2">
-                            <input type="date" value={tempValue} onChange={e => setTempValue(e.target.value)} className={`p-1 text-xs border rounded outline-none ${theme === 'dark' ? 'bg-[#121212] border-white/20 text-white [color-scheme:dark]' : 'bg-white border-gray-300 text-slate-800'}`} />
-                            <button onClick={() => saveInlineEdit('due_date')} className="px-2 py-1 bg-blue-600 text-white rounded text-[10px] font-bold">Lưu</button>
-                            <button onClick={() => setEditField(null)} className="px-2 py-1 text-[10px]">Hủy</button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                            <span className={`text-xs font-bold ${viewingTask.due_date && new Date(viewingTask.due_date) < new Date() && viewingTask.status !== 'done' ? 'text-red-500' : 'text-blue-500'}`}>
-                                {viewingTask.due_date ? new Date(viewingTask.due_date).toLocaleDateString('vi-VN') : 'Chưa đặt'}
-                            </span>
-                            {isEditor && <button onClick={() => { setEditField('due_date'); setTempValue(viewingTask.due_date ? viewingTask.due_date.split('T')[0] : ''); }} className={`opacity-0 group-hover:opacity-100 text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${theme === 'dark' ? 'bg-white/10 text-white hover:bg-blue-600' : 'bg-slate-200 text-blue-600'}`}>✎</button>}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className={`group relative border-b pb-4 border-dashed ${theme === 'dark' ? 'border-white/10' : 'border-gray-300'}`}>
-                      <span className="text-[10px] font-bold uppercase tracking-widest block mb-1.5 opacity-50">Mô tả công việc</span>
-                      {editField === 'description' && isEditor ? (
-                        <div className="flex flex-col gap-2">
-                          <textarea value={tempValue} onChange={e => setTempValue(e.target.value)} rows="3" className={`w-full p-2 text-xs font-normal border rounded-xl outline-none ${theme === 'dark' ? 'bg-[#121212] border-white/20 text-white' : 'bg-white border-gray-300 text-slate-800'}`} />
-                          <div className="flex justify-end gap-2 mt-2">
-                            <button onClick={() => setEditField(null)} className="px-3 py-1 text-xs">Hủy</button>
-                            <button onClick={() => saveInlineEdit('description')} className="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs">Lưu</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="relative pr-8 min-h-[30px]">
-                          <p className={`text-xs font-normal whitespace-pre-wrap leading-relaxed ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>{viewingTask.description || <span className="italic opacity-50">Chưa có mô tả...</span>}</p>
-                          {isEditor && <button onClick={() => { setEditField('description'); setTempValue(viewingTask.description || ''); }} className={`absolute right-0 top-0 opacity-0 group-hover:opacity-100 p-1 rounded-lg font-bold text-[10px] ${theme === 'dark' ? 'bg-white/10 text-white hover:bg-blue-600' : 'bg-slate-200 text-blue-600'}`}>✎</button>}
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-blue-500">📥 Văn bản đến</span>
-                          {isEditor && (
-                            <label onDragOver={handleDragOverFile} onDrop={handleDropFileInput} className={`cursor-pointer text-[10px] font-bold px-2.5 py-1 rounded-full border border-dashed transition-all ${theme === 'dark' ? 'bg-blue-900/30 text-blue-400 border-blue-500/50 hover:bg-blue-900/50' : 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100'}`}>
-                              + Chọn / Kéo thả file
-                              <input type="file" multiple onChange={(e) => handleInlineUpload(e, 'input')} className="hidden" />
-                            </label>
-                          )}
-                      </div>
-                      <div className="space-y-1.5 mb-6">{inputFiles.map((file, i) => (<div key={i} className={`group/file flex items-center justify-between p-1.5 rounded-lg border transition-all ${selectedFile?.url === file.url ? (theme === 'dark' ? 'bg-blue-900/40 border-blue-500' : 'bg-blue-50 border-blue-500') : (theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white')}`}><button onClick={() => setSelectedFile(file)} className="flex items-center gap-2 flex-1 overflow-hidden text-left pl-1">{getFileIcon(file.name, 'small')}<span className={`text-[11px] font-normal truncate transition-colors ${theme==='dark'?'text-slate-200 hover:text-white':'text-slate-700 hover:text-blue-600'}`}>{file.name}</span></button>{isEditor && <button onClick={() => handleInlineDeleteFile(file.url)} className="opacity-0 group-hover/file:opacity-100 p-1.5 text-red-500 hover:bg-red-500/20 rounded-md shrink-0 transition-all text-xs">🗑</button>}</div>))}</div>
+                  <div 
+                     className={`absolute top-0 left-0 w-full h-6 cursor-move flex items-center justify-center z-[110] transition-colors ${theme === 'dark' ? 'bg-black/40 hover:bg-black/60' : 'bg-slate-200 hover:bg-slate-300'}`}
+                     onMouseDown={handleModalDragStart}
+                     title="Kéo thả để di chuyển"
+                  >
+                      <div className="w-10 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500"></div>
+                  </div>
+  
+                  <div className={`w-full md:w-[45%] flex flex-col border-r ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'} p-6 pt-10 space-y-6 overflow-y-auto custom-scrollbar`} onMouseDown={(e) => e.stopPropagation()}>
                       
-                      <div className="flex justify-between items-center mb-2 mt-4 pt-4 border-t border-dashed border-gray-500/30">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-green-500">✅ Báo cáo / Kết quả</span>
-                          {isEditor && (
-                            <label onDragOver={handleDragOverFile} onDrop={handleDropFileOutput} className={`cursor-pointer text-[10px] font-bold px-2.5 py-1 rounded-full border border-dashed transition-all ${theme === 'dark' ? 'bg-green-900/30 text-green-400 border-green-500/50 hover:bg-green-900/50' : 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'}`}>
-                              + Nộp Báo Cáo
-                              <input type="file" multiple onChange={(e) => handleInlineUpload(e, 'output')} className="hidden" />
-                            </label>
-                          )}
-                      </div>
-                      <div className="space-y-1.5">{outputFiles.map((file, i) => (<div key={i} className={`group/file flex items-center justify-between p-1.5 rounded-lg border transition-all ${selectedFile?.url === file.url ? (theme === 'dark' ? 'bg-green-900/40 border-green-500' : 'bg-green-50 border-green-500') : (theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white')}`}><button onClick={() => setSelectedFile(file)} className="flex items-center gap-2 flex-1 overflow-hidden text-left pl-1">{getFileIcon(file.name, 'small')}<span className={`text-[11px] font-bold truncate transition-colors ${theme==='dark'?'text-green-400 hover:text-green-300':'text-green-600 hover:text-green-700'}`}>{file.name}</span></button>{isEditor && <button onClick={() => handleInlineDeleteFile(file.url)} className="opacity-0 group-hover/file:opacity-100 p-1.5 text-red-500 hover:bg-red-500/20 rounded-md shrink-0 transition-all text-xs">🗑</button>}</div>))}</div>
-                    </div>
-
-                    <div className={`pt-4 border-t ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'}`}>
-                      <h3 className="text-[10px] font-bold uppercase mb-4 opacity-50">Ghi chú trao đổi</h3>
-                      {isEditor && (
-                        <div className="flex gap-2 mb-4">
-                          <input type="text" value={quickNoteText} onChange={(e) => setQuickNoteText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleAddQuickNote() }} placeholder="Nhập ghi chú..." className={`flex-1 p-2.5 text-xs font-normal border rounded-xl outline-none focus:ring-2 focus:ring-yellow-500 transition-all ${theme === 'dark' ? 'bg-black/30 border-white/10 text-white' : 'bg-white border-gray-300 text-slate-800'}`} />
-                          <button onClick={handleAddQuickNote} className={`w-9 h-9 flex items-center justify-center rounded-xl font-bold text-lg transition-all ${theme === 'dark' ? 'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/40' : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'}`}>+</button>
-                        </div>
-                      )}
-                      <div className="space-y-3">
-                        {getSafeArray(viewingTask.notes).map((note, idx) => (
-                          <div key={idx} className="pl-3 border-l-2 border-yellow-400 group/note">
-                            <div className="flex justify-between items-center mb-1"><span className="text-[9px] opacity-40">{new Date(note.created_at).toLocaleString('vi-VN')}</span>{isEditor && <button onClick={() => handleDeleteNote(idx)} className="opacity-0 group-hover/note:opacity-100 text-[9px] text-red-500">Xóa</button>}</div>
-                            <div className={`text-xs ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>{note.text}</div>
+                      <div className="group relative">
+                        {editField === 'title' && quyenSua ? (
+                          <div className="flex flex-col gap-2">
+                              <textarea value={tempValue} onChange={e => setTempValue(e.target.value)} rows="2" className={`w-full p-2 text-lg border rounded-xl outline-none ${theme === 'dark' ? 'bg-[#121212] border-white/20 text-white' : 'bg-white border-gray-300 text-slate-800'}`} />
+                              <div className="flex justify-end gap-2"><button onClick={() => setEditField(null)} className="px-3 py-1">Hủy</button><button onClick={() => saveInlineEdit('title')} className="px-3 py-1 bg-blue-600 text-white rounded-lg">Lưu</button></div>
                           </div>
-                        ))}
+                        ) : (
+                          <div className="flex justify-between items-start"><h2 className="text-xl font-normal leading-tight pr-8">{viewingTask.title}</h2>{quyenSua && <button onClick={() => { setEditField('title'); setTempValue(viewingTask.title); }} className={`opacity-0 group-hover:opacity-100 text-[10px] font-bold px-2 py-1 rounded shrink-0 ${theme === 'dark' ? 'bg-white/10 text-white hover:bg-blue-600' : 'bg-slate-200 text-blue-600'}`}>✎ Sửa</button>}</div>
+                        )}
                       </div>
-                    </div>
-                </div>
-                
-                <div className={`w-full md:w-[55%] flex flex-col relative pt-6 ${theme === 'dark' ? 'bg-[#121212]' : 'bg-slate-100'}`} onMouseDown={(e) => e.stopPropagation()}>
-                  <button onClick={dongModalTask} className={`absolute top-6 right-4 z-[120] w-8 h-8 rounded-full shadow-md flex items-center justify-center font-bold transition-colors ${theme === 'dark' ? 'bg-white/10 hover:bg-red-500 text-white' : 'bg-white/80 hover:bg-red-50 hover:text-red-600'}`}>✕</button>
-                  {selectedFile ? (
-                    selectedFile.name.toLowerCase().match(/\.(doc|docx|xls|xlsx|ppt|pptx|pdf)$/i) ? (
-                        <iframe src={selectedFile.name.toLowerCase().endsWith('pdf') ? selectedFile.url : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url)}`} className="w-full h-full border-none bg-white rounded-br-2xl" />
-                    ) : selectedFile.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                        <div className="flex-1 flex items-center justify-center p-6"><img src={selectedFile.url} className="max-w-full max-h-full object-contain rounded-xl shadow-lg" /></div>
+                      
+                      {/* HẠN CHÓT */}
+                      <div className="group relative flex items-center gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-widest opacity-50">Hạn chót:</span>
+                        {editField === 'due_date' && quyenSua ? (
+                          <div className="flex items-center gap-2">
+                              <input type="date" value={tempValue} onChange={e => setTempValue(e.target.value)} className={`p-1 text-xs border rounded outline-none ${theme === 'dark' ? 'bg-[#121212] border-white/20 text-white [color-scheme:dark]' : 'bg-white border-gray-300 text-slate-800'}`} />
+                              <button onClick={() => saveInlineEdit('due_date')} className="px-2 py-1 bg-blue-600 text-white rounded text-[10px] font-bold">Lưu</button>
+                              <button onClick={() => setEditField(null)} className="px-2 py-1 text-[10px]">Hủy</button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                              <span className={`text-xs font-bold ${viewingTask.due_date && new Date(viewingTask.due_date) < new Date() && viewingTask.status !== 'done' ? 'text-red-500' : 'text-blue-500'}`}>
+                                  {viewingTask.due_date ? new Date(viewingTask.due_date).toLocaleDateString('vi-VN') : 'Chưa đặt'}
+                              </span>
+                              {quyenSua && <button onClick={() => { setEditField('due_date'); setTempValue(viewingTask.due_date ? viewingTask.due_date.split('T')[0] : ''); }} className={`opacity-0 group-hover:opacity-100 text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${theme === 'dark' ? 'bg-white/10 text-white hover:bg-blue-600' : 'bg-slate-200 text-blue-600'}`}>✎</button>}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className={`group relative border-b pb-4 border-dashed ${theme === 'dark' ? 'border-white/10' : 'border-gray-300'}`}>
+                        <span className="text-[10px] font-bold uppercase tracking-widest block mb-1.5 opacity-50">Mô tả công việc</span>
+                        {editField === 'description' && quyenSua ? (
+                          <div className="flex flex-col gap-2">
+                            <textarea value={tempValue} onChange={e => setTempValue(e.target.value)} rows="3" className={`w-full p-2 text-xs font-normal border rounded-xl outline-none ${theme === 'dark' ? 'bg-[#121212] border-white/20 text-white' : 'bg-white border-gray-300 text-slate-800'}`} />
+                            <div className="flex justify-end gap-2 mt-2">
+                              <button onClick={() => setEditField(null)} className="px-3 py-1 text-xs">Hủy</button>
+                              <button onClick={() => saveInlineEdit('description')} className="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs">Lưu</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="relative pr-8 min-h-[30px]">
+                            <p className={`text-xs font-normal whitespace-pre-wrap leading-relaxed ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>{viewingTask.description || <span className="italic opacity-50">Chưa có mô tả...</span>}</p>
+                            {quyenSua && <button onClick={() => { setEditField('description'); setTempValue(viewingTask.description || ''); }} className={`absolute right-0 top-0 opacity-0 group-hover:opacity-100 p-1 rounded-lg font-bold text-[10px] ${theme === 'dark' ? 'bg-white/10 text-white hover:bg-blue-600' : 'bg-slate-200 text-blue-600'}`}>✎</button>}
+                          </div>
+                        )}
+                      </div>
+  
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-blue-500">📥 Văn bản đến</span>
+                            {quyenSua && (
+                              <label onDragOver={handleDragOverFile} onDrop={handleDropFileInput} className={`cursor-pointer text-[10px] font-bold px-2.5 py-1 rounded-full border border-dashed transition-all ${theme === 'dark' ? 'bg-blue-900/30 text-blue-400 border-blue-500/50 hover:bg-blue-900/50' : 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100'}`}>
+                                + Chọn / Kéo thả file
+                                <input type="file" multiple onChange={(e) => handleInlineUpload(e, 'input')} className="hidden" />
+                              </label>
+                            )}
+                        </div>
+                        <div className="space-y-1.5 mb-6">{inputFiles.map((file, i) => (<div key={i} className={`group/file flex items-center justify-between p-1.5 rounded-lg border transition-all ${selectedFile?.url === file.url ? (theme === 'dark' ? 'bg-blue-900/40 border-blue-500' : 'bg-blue-50 border-blue-500') : (theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white')}`}><button onClick={() => setSelectedFile(file)} className="flex items-center gap-2 flex-1 overflow-hidden text-left pl-1">{getFileIcon(file.name, 'small')}<span className={`text-[11px] font-normal truncate transition-colors ${theme==='dark'?'text-slate-200 hover:text-white':'text-slate-700 hover:text-blue-600'}`}>{file.name}</span></button>{quyenSua && <button onClick={() => handleInlineDeleteFile(file.url)} className="opacity-0 group-hover/file:opacity-100 p-1.5 text-red-500 hover:bg-red-500/20 rounded-md shrink-0 transition-all text-xs">🗑</button>}</div>))}</div>
+                        
+                        <div className="flex justify-between items-center mb-2 mt-4 pt-4 border-t border-dashed border-gray-500/30">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-green-500">✅ Báo cáo / Kết quả</span>
+                            {quyenSua && (
+                              <label onDragOver={handleDragOverFile} onDrop={handleDropFileOutput} className={`cursor-pointer text-[10px] font-bold px-2.5 py-1 rounded-full border border-dashed transition-all ${theme === 'dark' ? 'bg-green-900/30 text-green-400 border-green-500/50 hover:bg-green-900/50' : 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'}`}>
+                                + Nộp Báo Cáo
+                                <input type="file" multiple onChange={(e) => handleInlineUpload(e, 'output')} className="hidden" />
+                              </label>
+                            )}
+                        </div>
+                        <div className="space-y-1.5">{outputFiles.map((file, i) => (<div key={i} className={`group/file flex items-center justify-between p-1.5 rounded-lg border transition-all ${selectedFile?.url === file.url ? (theme === 'dark' ? 'bg-green-900/40 border-green-500' : 'bg-green-50 border-green-500') : (theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-white')}`}><button onClick={() => setSelectedFile(file)} className="flex items-center gap-2 flex-1 overflow-hidden text-left pl-1">{getFileIcon(file.name, 'small')}<span className={`text-[11px] font-bold truncate transition-colors ${theme==='dark'?'text-green-400 hover:text-green-300':'text-green-600 hover:text-green-700'}`}>{file.name}</span></button>{quyenSua && <button onClick={() => handleInlineDeleteFile(file.url)} className="opacity-0 group-hover/file:opacity-100 p-1.5 text-red-500 hover:bg-red-500/20 rounded-md shrink-0 transition-all text-xs">🗑</button>}</div>))}</div>
+                      </div>
+  
+                      <div className={`pt-4 border-t ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'}`}>
+                        <h3 className="text-[10px] font-bold uppercase mb-4 opacity-50">Ghi chú trao đổi</h3>
+                        {quyenSua && (
+                          <div className="flex gap-2 mb-4">
+                            <input type="text" value={quickNoteText} onChange={(e) => setQuickNoteText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleAddQuickNote() }} placeholder="Nhập ghi chú..." className={`flex-1 p-2.5 text-xs font-normal border rounded-xl outline-none focus:ring-2 focus:ring-yellow-500 transition-all ${theme === 'dark' ? 'bg-black/30 border-white/10 text-white' : 'bg-white border-gray-300 text-slate-800'}`} />
+                            <button onClick={handleAddQuickNote} className={`w-9 h-9 flex items-center justify-center rounded-xl font-bold text-lg transition-all ${theme === 'dark' ? 'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/40' : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'}`}>+</button>
+                          </div>
+                        )}
+                        <div className="space-y-3">
+                          {getSafeArray(viewingTask.notes).map((note, idx) => (
+                            <div key={idx} className="pl-3 border-l-2 border-yellow-400 group/note">
+                              <div className="flex justify-between items-center mb-1"><span className="text-[9px] opacity-40">{new Date(note.created_at).toLocaleString('vi-VN')}</span>{quyenSua && <button onClick={() => handleDeleteNote(idx)} className="opacity-0 group-hover/note:opacity-100 text-[9px] text-red-500">Xóa</button>}</div>
+                              <div className={`text-xs ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>{note.text}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                  </div>
+                  
+                  <div className={`w-full md:w-[55%] flex flex-col relative pt-6 ${theme === 'dark' ? 'bg-[#121212]' : 'bg-slate-100'}`} onMouseDown={(e) => e.stopPropagation()}>
+                    <button onClick={dongModalTask} className={`absolute top-6 right-4 z-[120] w-8 h-8 rounded-full shadow-md flex items-center justify-center font-bold transition-colors ${theme === 'dark' ? 'bg-white/10 hover:bg-red-500 text-white' : 'bg-white/80 hover:bg-red-50 hover:text-red-600'}`}>✕</button>
+                    {selectedFile ? (
+                      selectedFile.name.toLowerCase().match(/\.(doc|docx|xls|xlsx|ppt|pptx|pdf)$/i) ? (
+                          <iframe src={selectedFile.name.toLowerCase().endsWith('pdf') ? selectedFile.url : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url)}`} className="w-full h-full border-none bg-white rounded-br-2xl" />
+                      ) : selectedFile.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                          <div className="flex-1 flex items-center justify-center p-6"><img src={selectedFile.url} className="max-w-full max-h-full object-contain rounded-xl shadow-lg" /></div>
+                      ) : (
+                          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center"><div className="mb-6">{getFileIcon(selectedFile.name, 'large')}</div><p className="text-lg mb-6">{selectedFile.name}</p><a href={selectedFile.url} target="_blank" className="px-6 py-3 rounded-full bg-blue-600 text-white font-bold shadow-md">Tải xuống</a></div>
+                      )
                     ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center"><div className="mb-6">{getFileIcon(selectedFile.name, 'large')}</div><p className="text-lg mb-6">{selectedFile.name}</p><a href={selectedFile.url} target="_blank" className="px-6 py-3 rounded-full bg-blue-600 text-white font-bold shadow-md">Tải xuống</a></div>
-                    )
-                  ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center opacity-30"><div className="text-5xl mb-4">👁️</div><p className="text-xs font-semibold">Chọn tài liệu bên trái để xem trước</p></div>
-                  )}
+                      <div className="flex-1 flex flex-col items-center justify-center opacity-30"><div className="text-5xl mb-4">👁️</div><p className="text-xs font-semibold">Chọn tài liệu bên trái để xem trước</p></div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })()}
+            );
+          })()}
 {/* MODAL XÁC NHẬN XÓA CHUẨN UX/UI */}
         {deletingTaskId && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
