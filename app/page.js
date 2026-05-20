@@ -8,29 +8,50 @@ function getFileIcon(filename, size = 'small') {
   const ext = filename.split('.').pop().toLowerCase();
   const isLarge = size === 'large';
   
-  let color = 'text-gray-400';
-  let badgeColor = 'bg-gray-500';
+  let strokeColor = 'stroke-slate-400';
+  let bgColor = 'bg-slate-500/10';
+  let textColor = 'text-slate-500 border-slate-500/20';
   let badgeText = 'FILE';
+  let innerIcon = (
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m-6-8h2" />
+  );
 
-  if (['doc', 'docx'].includes(ext)) { color = 'text-blue-500'; badgeColor = 'bg-blue-600'; badgeText = 'DOC'; }
-  else if (['xls', 'xlsx', 'csv'].includes(ext)) { color = 'text-green-500'; badgeColor = 'bg-green-600'; badgeText = 'XLS'; }
-  else if (['ppt', 'pptx'].includes(ext)) { color = 'text-orange-500'; badgeColor = 'bg-orange-500'; badgeText = 'PPT'; }
-  else if (['pdf'].includes(ext)) { color = 'text-red-500'; badgeColor = 'bg-red-500'; badgeText = 'PDF'; }
-  else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) { color = 'text-purple-500'; badgeColor = 'bg-purple-500'; badgeText = 'IMG'; }
-  else if (['zip', 'rar', '7z'].includes(ext)) { color = 'text-yellow-500'; badgeColor = 'bg-yellow-600'; badgeText = 'ZIP'; }
+  if (['doc', 'docx'].includes(ext)) { 
+    strokeColor = 'stroke-blue-500'; bgColor = 'bg-blue-500/10'; textColor = 'text-blue-500 border-blue-500/20'; badgeText = 'DOC';
+    innerIcon = <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h3m-3-8h6" />;
+  } else if (['xls', 'xlsx', 'csv'].includes(ext)) { 
+    strokeColor = 'stroke-green-500'; bgColor = 'bg-green-500/10'; textColor = 'text-green-600 border-green-500/20'; badgeText = 'XLS';
+    innerIcon = <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17h6M9 12h6M9 7h6M9 7v10M15 7v10" />;
+  } else if (['ppt', 'pptx'].includes(ext)) { 
+    strokeColor = 'stroke-orange-500'; bgColor = 'bg-orange-500/10'; textColor = 'text-orange-600 border-orange-500/20'; badgeText = 'PPT';
+    innerIcon = <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4" />;
+  } else if (['pdf'].includes(ext)) { 
+    strokeColor = 'stroke-red-500'; bgColor = 'bg-red-500/10'; textColor = 'text-red-500 border-red-500/20'; badgeText = 'PDF';
+    innerIcon = <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v4m0 4h.01" />;
+  } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) { 
+    strokeColor = 'stroke-purple-500'; bgColor = 'bg-purple-500/10'; textColor = 'text-purple-500 border-purple-500/20'; badgeText = 'IMG';
+    innerIcon = <circle cx="12" cy="13" r="3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />;
+  } else if (['zip', 'rar', '7z'].includes(ext)) { 
+    strokeColor = 'stroke-yellow-500'; bgColor = 'bg-yellow-500/10'; textColor = 'text-yellow-600 border-yellow-500/20'; badgeText = 'ZIP';
+    innerIcon = <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 11v4m0 0l-2-2m2 2l2-2" />;
+  }
 
-  const svgClass = isLarge ? "w-28 h-28" : "w-6 h-6";
-  const badgeClass = isLarge ? "text-base px-3 py-0.5 bottom-4 rounded-md" : "text-[7px] px-1 bottom-0.5 rounded-sm";
+  if (isLarge) {
+    return (
+      <div className={`relative flex flex-col items-center justify-center p-6 rounded-2xl ${bgColor} border border-dashed border-slate-500/20 w-24 h-24`}>
+        <svg xmlns="http://www.w3.org/2000/svg" className={`w-12 h-12 ${strokeColor}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+        </svg>
+        <span className={`absolute bottom-2 text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider ${textColor} bg-white dark:bg-[#1a1a24]`}>{badgeText}</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative flex flex-col items-center justify-center shrink-0">
-      <svg viewBox="0 0 24 24" fill="currentColor" className={`${svgClass} ${color} drop-shadow-sm`}>
-        <path d="M6 2C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8.82843C20 8.29799 19.7893 7.78929 19.4142 7.41421L14.5858 2.58579C14.2107 2.21071 13.702 2 13.1716 2H6Z" />
-        <path d="M13 2.5V6C13 7.10457 13.8954 8 15 8H18.5" fill="black" opacity="0.15" />
+    <div className={`p-1.5 rounded-lg ${bgColor} shrink-0 flex items-center justify-center`}>
+      <svg xmlns="http://www.w3.org/2000/svg" className={`w-4 h-4 ${strokeColor}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
       </svg>
-      <div className={`absolute font-black text-white shadow-sm tracking-widest ${badgeColor} ${badgeClass}`}>
-        {badgeText}
-      </div>
     </div>
   );
 }
@@ -40,14 +61,6 @@ export default function TrangQuanLyChuyenSau() {
   const [tasks, setTasks] = useState([])
   const [currentSpace, setCurrentSpace] = useState('shared'); // 'shared' (Ngôi nhà chung) hoặc 'private' (Căn phòng riêng)
   const [isSharedInput, setIsSharedInput] = useState(true); // Trạng thái công tắc khi tạo việc mới
-  // Bộ lọc thông minh tách biệt giữa phòng riêng và nhà chung
-  const hienThiTasks = tasks.filter(task => {
-      if (currentSpace === 'shared') {
-          return task.is_shared === true; // Chỉ hiện việc công khai ở Ngôi nhà chung
-      } else {
-          return task.is_shared === false; // Chỉ hiện việc cá nhân ở Căn phòng riêng
-      }
-  });
   const [loading, setLoading] = useState(true)
   const [theme, setTheme] = useState('light')
   
@@ -106,9 +119,19 @@ export default function TrangQuanLyChuyenSau() {
   const modalRef = useRef(null);
   const dragData = useRef({ isDragging: false, startX: 0, startY: 0, initX: 0, initY: 0 });
 
-  // === CÁC STATE PHÂN QUYỀN MỚI ===
+// === CÁC STATE PHÂN QUYỀN MỚI ===
   const [currentUser, setCurrentUser] = useState(null);
   const [userRole, setUserRole] = useState('viewer'); // Mặc định an toàn nhất là viewer
+
+  // Bộ lọc thông minh tách biệt giữa phòng riêng và nhà chung
+  const hienThiTasks = tasks.filter(task => {
+      if (currentSpace === 'shared') {
+          return task.is_shared === true; // Ngôi nhà chung: Của chung
+      } else {
+          // Căn phòng riêng: Việc không chia sẻ VÀ phải ĐÚNG của user đang đăng nhập
+          return task.is_shared === false && task.user_id === currentUser?.id;
+      }
+  });
 
   useEffect(() => {
     setPagePending(1);
@@ -279,13 +302,15 @@ export default function TrangQuanLyChuyenSau() {
 
   async function luuMangCongViec(e) {
     e.preventDefault()
-    if (!isEditor) return;
+    const quyenSua = isEditor || currentSpace === 'private';
+    if (!quyenSua) return;
     const { error } = await supabase.from('projects').insert([{ title: projectTitle }])
     if (!error) { setProjectTitle(''); setModalType(null); taiDuLieuHienTai(); }
   }
 
   function xoaMangCongViec(id) {
-    if (!isEditor) return;
+    const quyenSua = isEditor || currentSpace === 'private';
+    if (!quyenSua) return;
     if(confirm('Xóa mảng này sẽ xóa tất cả công việc con bên trong. Bạn chắc chứ?')) {
       supabase.from('projects').delete().eq('id', id).then(() => {
         setSelectedProjectId(null); taiDuLieuHienTai();
@@ -294,13 +319,14 @@ export default function TrangQuanLyChuyenSau() {
   }
 
   async function handleRenameProject(id) {
-    if (!isEditor || !editProjectName.trim()) { setEditingProjectId(null); return; }
+    const quyenSua = isEditor || currentSpace === 'private';
+    if (!quyenSua || !editProjectName.trim()) { setEditingProjectId(null); return; }
     setProjects(prev => prev.map(p => p.id === id ? { ...p, title: editProjectName } : p));
     setEditingProjectId(null);
     await supabase.from('projects').update({ title: editProjectName }).eq('id', id);
   }
 
-function moModalTaoMoi(projectId) {
+  function moModalTaoMoi(projectId) {
     setActiveProjectId(projectId); setTaskTitle(''); setTaskDesc(''); setTaskDeadline(''); setTaskFiles([]);
     setModalType('task_new');
   }
@@ -314,8 +340,11 @@ function moModalTaoMoi(projectId) {
     }
   };
 
-  async function handleDirectUploadPendingFile(e) {
-    if (!isEditor) return;
+async function handleDirectUploadPendingFile(e) {
+    const quyenSua = isEditor || currentSpace === 'private';
+    if (!quyenSua) return;
+    
+    // ... (Phần còn lại của hàm giữ nguyên)
     const files = Array.from(e.target.files);
     if (!files.length || !selectedProjectId) return;
     
@@ -333,10 +362,11 @@ const taskData = {
           description: '',
           due_date: null,
           attachments: [{ name: file.name, url: urlData.publicUrl, type: 'input' }], 
-          notes: [], 
+notes: [], 
           project_id: selectedProjectId, 
           status: 'pending',
-          is_shared: isEditor ? isSharedInput : false
+          is_shared: isEditor ? isSharedInput : false,
+          user_id: currentUser?.id // Đóng dấu chủ sở hữu
         };
         await supabase.from('tasks').insert([taskData]);
       }
@@ -368,11 +398,12 @@ async function xuLyTaoViecMoi(e) {
       setIsUploading(false); setUploadProgress(0);
     }
     
-    const taskData = {
+const taskData = {
       title: taskTitle, description: taskDesc,
       due_date: taskDeadline ? new Date(taskDeadline).toISOString() : null,
       attachments, notes: [], project_id: activeProjectId, status: 'todo',
-      is_shared: isEditor ? isSharedInput : false
+      is_shared: isEditor ? isSharedInput : false,
+      user_id: currentUser?.id // Đóng dấu chủ sở hữu
     };
     
     const { error: err } = await supabase.from('tasks').insert([taskData]);
@@ -497,9 +528,11 @@ function handleDeleteNote(idx) {
 
   const handleDragOver = (e) => { e.preventDefault(); };
   
-  const handleDrop = async (e, newStatus) => {
+const handleDrop = async (e, newStatus) => {
     e.preventDefault();
-    if (!isEditor) return;
+    const quyenSua = isEditor || currentSpace === 'private';
+    if (!quyenSua) return;
+    
     const taskId = e.dataTransfer.getData("taskId");
     const sourceStatus = e.dataTransfer.getData("sourceStatus");
     if (!taskId) return;
@@ -511,7 +544,9 @@ function handleDeleteNote(idx) {
   };
 
   const handleDropSort = (status, dragIndex, dropIndex) => {
-    if (!isEditor) return;
+    const quyenSua = isEditor || currentSpace === 'private';
+    if (!quyenSua) return;
+    
     let rawList, ordersMap, setOrders, page, storageKey;
     if(status === 'pending') { rawList = sortedPendingRaw; ordersMap = pendingOrders; setOrders = setPendingOrders; page = pagePending; storageKey = 'pendingOrders'; }
     else if(status === 'todo') { rawList = sortedTodoRaw; ordersMap = todoOrders; setOrders = setTodoOrders; page = pageTodo; storageKey = 'todoOrders'; }
@@ -531,14 +566,16 @@ function handleDeleteNote(idx) {
     localStorage.setItem(storageKey, JSON.stringify(nextOrders));
   };
 // 1. Hàm này chỉ dùng để kích hoạt bảng thông báo UI
-  function xoaTaskNhanh(taskId) {
-      if (!isEditor) return;
+function xoaTaskNhanh(taskId) {
+      const quyenSua = isEditor || currentSpace === 'private';
+      if (!quyenSua) return;
       setDeletingTaskId(taskId); // Gắn ID để mở bảng Modal
   }
 
   // 2. Hàm này thực thi việc xóa vĩnh viễn khi bấm Xác nhận trên bảng Modal
-  async function thucHienXoaTask() {
-      if (!isEditor || !deletingTaskId) return;
+async function thucHienXoaTask() {
+      const quyenSua = isEditor || currentSpace === 'private';
+      if (!quyenSua || !deletingTaskId) return;
       setIsDeleting(true); // Đổi nút thành "Đang xóa..." để tránh bấm đúp
       
       try {
@@ -707,11 +744,11 @@ function handleDeleteNote(idx) {
                     <input autoFocus value={editProjectName} onChange={(e) => setEditProjectName(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') handleRenameProject(project.id) }} onBlur={() => handleRenameProject(project.id)} className="w-full bg-transparent text-sm font-semibold focus:outline-none dark:text-white text-slate-800" />
                   </div>
                 ) : (
-                  <button onClick={() => setSelectedProjectId(project.id)} className={`w-full text-left px-3 py-2 rounded-xl transition-all text-sm font-semibold flex items-center justify-between ${selectedProjectId === project.id ? (theme === 'dark' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/20' : 'bg-blue-600 text-white shadow-md border border-transparent') : (theme === 'dark' ? 'hover:bg-white/5 text-slate-300 border border-transparent' : 'hover:bg-white/50 text-slate-700 border border-transparent')}`}>
-                    <span className="truncate pr-2 text-[13px]">{index + 1}. {project.title}</span>
+<button onClick={() => setSelectedProjectId(project.id)} className={`w-full text-left px-3 py-2 rounded-xl transition-all text-sm font-semibold flex items-center justify-between min-w-0 gap-2 ${selectedProjectId === project.id ? (theme === 'dark' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/20' : 'bg-blue-600 text-white shadow-md border border-transparent') : (theme === 'dark' ? 'hover:bg-white/5 text-slate-300 border border-transparent' : 'hover:bg-white/50 text-slate-700 border border-transparent')}`}>
+                    <span className="truncate text-[13px] block flex-1 min-w-0" title={`${index + 1}. ${project.title}`}>{index + 1}. {project.title}</span>
                     <div className="relative w-6 h-5 flex items-center justify-end shrink-0 overflow-hidden">
-                        <span className={`absolute transition-all duration-200 group-hover:opacity-0 group-hover:translate-x-4 text-[9px] px-1.5 py-0.5 rounded-full font-bold ${selectedProjectId === project.id ? (theme === 'dark' ? 'bg-blue-500 text-white' : 'bg-blue-400 text-white') : (theme === 'dark' ? 'bg-white/10' : 'bg-black/5')}`}>{hienThiTasks.filter(t => t.project_id === project.id).length}</span>
-                        {isEditor && (
+                     <span className={`absolute transition-all duration-200 group-hover:opacity-0 group-hover:translate-x-4 text-[9px] px-1.5 py-0.5 rounded-full font-bold ${selectedProjectId === project.id ? (theme === 'dark' ? 'bg-blue-500 text-white' : 'bg-blue-400 text-white') : (theme === 'dark' ? 'bg-white/10' : 'bg-black/5')}`}>{hienThiTasks.filter(t => t.project_id === project.id).length}</span>
+                        {(isEditor || currentSpace === 'private') && (
                           <span onClick={(e) => { e.stopPropagation(); setEditingProjectId(project.id); setEditProjectName(project.title); }} className={`absolute transition-all duration-200 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 p-1 rounded-md hover:bg-black/10 dark:hover:bg-white/20 text-xs ${selectedProjectId === project.id ? (theme === 'dark' ? 'text-blue-400' : 'text-white') : textMuted}`}>✎</span>
                         )}
                     </div>
@@ -728,7 +765,7 @@ function handleDeleteNote(idx) {
             </div>
           )}
 
-          {isEditor && (
+{(isEditor || currentSpace === 'private') && (
             <div className={`p-3 border-t ${theme === 'dark' ? 'border-white/5' : 'border-white/30'}`}>
               <button onClick={() => setModalType('project')} className={`w-full px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm ${theme === 'dark' ? 'bg-white text-black hover:bg-gray-200' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20'}`}>+ Tạo mảng mới</button>
             </div>
@@ -777,6 +814,22 @@ function handleDeleteNote(idx) {
                   )}
                 </div>
               )}
+</div>
+
+            {/* HAI TAB CHUYỂN ĐỔI KHÔNG GIAN ĐƯỢC DỜI LÊN ĐÂY */}
+            <div className={`flex shrink-0 p-1 rounded-full shadow-inner border backdrop-blur-md ${theme === 'dark' ? 'bg-black/30 border-white/10' : 'bg-white/50 border-white/60'}`}>
+              <button 
+                onClick={() => setCurrentSpace('shared')}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${currentSpace === 'shared' ? 'bg-blue-500 text-white shadow-md' : theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'}`}
+              >
+                Tổng hợp
+              </button>
+              <button 
+                onClick={() => setCurrentSpace('private')}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${currentSpace === 'private' ? 'bg-purple-500 text-white shadow-md' : theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'}`}
+              >
+                Cá nhân
+              </button>
             </div>
 
             <div className="flex gap-3 items-center">
@@ -799,47 +852,33 @@ function handleDeleteNote(idx) {
               <div className="h-full flex flex-col items-center justify-center p-8"><div className={`text-6xl mb-4 ${theme === 'dark' ? 'opacity-20' : 'opacity-40'}`}>📄</div><p className="text-sm font-semibold opacity-50">Hãy chọn danh sách bên trái hoặc sử dụng thanh tìm kiếm.</p></div>
             ) : (
               <div className="max-w-[1600px] mx-auto p-4 sm:p-5 flex flex-col h-full relative">
-                <div className="mb-4 shrink-0">
-                  <div className="flex justify-between items-center mb-3">
-                    <h2 className="text-2xl font-extrabold tracking-tight">{selectedProject.title}</h2>
-                    {/* KHÔNG GIAN CHO TẤT CẢ MỌI NGƯỜI */}
-                    <div className="flex justify-center mb-6 w-full fade-in zoom-in-95 animate-in duration-300">
-                      <div className={`p-1.5 rounded-2xl flex gap-2 shadow-inner ${theme === 'dark' ? 'bg-[#181a20] border border-white/5' : 'bg-slate-100 border border-gray-200'}`}>
-                        <button 
-                          onClick={() => setCurrentSpace('shared')}
-                          className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${currentSpace === 'shared' ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20' : theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-white'}`}
-                        >
-                          🏠 Ngôi nhà chung
-                        </button>
-                        <button 
-                          onClick={() => setCurrentSpace('private')}
-                          className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${currentSpace === 'private' ? 'bg-purple-500 text-white shadow-md shadow-purple-500/20' : theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-white'}`}
-                        >
-                          🔑 Căn phòng riêng
-                        </button>
-                      </div>
-                    </div>
+                
+                {/* TOÀN BỘ HEADER VÀ TABS KHÔNG GIAN */}
+                <div className="mb-4 shrink-0 space-y-4">
+                  
+                  {/* DÒNG THỨ NHẤT: TIÊU ĐỀ VÀ CÁC NÚT THAO TÁC */}
+                  <div className="flex justify-between items-center gap-4 border-b border-gray-100 dark:border-white/5 pb-3">
+                    <h2 className="text-2xl font-extrabold tracking-tight truncate flex-1" title={selectedProject.title}>{selectedProject.title}</h2>
                     
                     {/* NÚT BẤM ĐƯỢC PHÂN QUYỀN */}
                     <div className="flex gap-2 shrink-0">
-                     {/* Nút Thêm: Admin/Editor luôn thấy, Cấp 3 chỉ thấy ở Căn phòng riêng */}
                       {(isEditor || currentSpace === 'private') && (
                         <button onClick={() => moModalTaoMoi(selectedProject.id)} className={`px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm ${theme === 'dark' ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>+ Thêm công việc</button>
                       )}
-                      {/* Nút Xóa: Chỉ Admin/Editor mới thấy */}
-                      {isEditor && (
+                      {(isEditor || currentSpace === 'private') && (
                         <button onClick={() => xoaMangCongViec(selectedProject.id)} className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${theme === 'dark' ? 'text-red-400 bg-red-500/10 hover:bg-red-500/20' : 'text-red-500 bg-white/50 hover:bg-white text-red-600 border border-white/60'}`}>Xóa mảng</button>
                       )}
                     </div>
                   </div>
+
+                  {/* THANH TIẾN ĐỘ */}
                   {viewMode === 'kanban' && (
                     <div className={`p-3 rounded-xl transition-all ${theme === 'dark' ? 'bg-white/5 border border-white/5' : 'bg-white/60 border border-white/50 shadow-sm'}`}>
-                        <div className="flex justify-between items-center mb-2"><span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Tiến độ mảng:</span><span className="text-sm font-black text-blue-500">{progressPercent}%</span></div>
+                        <div className="flex justify-between items-center mb-2"><span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Tiến độ:</span><span className="text-sm font-black text-blue-500">{progressPercent}%</span></div>
                         <div className={`w-full rounded-full h-1.5 relative overflow-hidden ${theme === 'dark' ? 'bg-black/40' : 'bg-black/5'}`}><div className={`h-full rounded-full transition-all duration-700 ease-out ${progressPercent === 100 ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${progressPercent}%` }}></div></div>
                     </div>
                   )}
                 </div>
-
                 {viewMode === 'kanban' ? (
                   <div className="flex-1 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 pb-4 min-h-[500px]">
                     
@@ -848,7 +887,8 @@ function handleDeleteNote(idx) {
                       <div className="flex items-center justify-between px-1 mb-3 shrink-0">
                          <div className="flex items-center gap-2">
                            <span className="text-xs font-extrabold uppercase tracking-widest text-purple-600 dark:text-purple-400">Văn bản chờ</span>
-                           {isEditor && (
+                           {/* CHÌA KHÓA: Cho phép Cấp 3 thấy nút Thêm nếu ở Căn phòng riêng */}
+                           {(isEditor || currentSpace === 'private') && (
                              <label className="cursor-pointer flex items-center justify-center w-5 h-5 rounded-full bg-purple-200/50 text-purple-700 hover:bg-purple-200 transition-colors shadow-sm">
                                <span className="font-bold text-xs">+</span>
                                <input type="file" multiple className="hidden" onChange={handleDirectUploadPendingFile} />
@@ -980,7 +1020,7 @@ function handleDeleteNote(idx) {
                 ) : (
                   // BẢNG VIEW THỐNG KÊ (DASHBOARD)
                   <div className={`flex-1 flex flex-col rounded-2xl p-5 sm:p-8 transition-all overflow-y-auto custom-scrollbar ${theme === 'dark' ? 'bg-black/20 border border-white/5' : 'bg-white/60 border border-white/50 shadow-sm backdrop-blur-md'}`}>
-                     <h3 className="text-xl font-bold mb-6">Tổng quan tiến độ mảng</h3>
+                     <h3 className="text-xl font-bold mb-6">Tổng quan tiến độ</h3>
                      
                      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                         <div className={`p-4 rounded-2xl shadow-sm border ${theme === 'dark' ? 'bg-[#1a1a24] border-white/10' : 'bg-white border-gray-100'}`}>
@@ -1382,12 +1422,15 @@ function handleDeleteNote(idx) {
   );
 
   function PendingDocCard({ task, index, isEditor }) {
+    // 1. TẠO CHÌA KHÓA CHUNG CHO TOÀN BỘ THẺ:
+    const quyenSua = isEditor || currentSpace === 'private';
+    
     const files = getSafeArray(task.attachments);
     const firstFile = files.length > 0 ? files[0] : { name: task.title, url: '' };
 
     return (
       <div 
-        draggable={isEditor} 
+        draggable={quyenSua} 
         onDragStart={(e) => {
            e.dataTransfer.setData("taskId", task.id);
            e.dataTransfer.setData("sourceStatus", 'pending');
@@ -1396,7 +1439,7 @@ function handleDeleteNote(idx) {
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
            e.stopPropagation();
-           if (!isEditor) return;
+           if (!quyenSua) return;
            const sourceStatus = e.dataTransfer.getData("sourceStatus");
            const sortIdx = e.dataTransfer.getData("sortIdx");
            const targetStatus = 'pending';
@@ -1410,10 +1453,10 @@ function handleDeleteNote(idx) {
         onClick={() => {
            if(firstFile.url) moTrinhXemFile(firstFile);
         }}
-        className={`group flex items-center justify-between p-2.5 rounded-xl border cursor-grab active:cursor-grabbing hover:shadow-md transition-all ${theme === 'dark' ? 'bg-[#1a1a24] border-white/10 hover:bg-white/5' : 'bg-white border-purple-100 shadow-sm hover:bg-purple-50'}`}
+        className={`group flex items-center justify-between p-2.5 rounded-xl border ${quyenSua ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} hover:shadow-md transition-all ${theme === 'dark' ? 'bg-[#1a1a24] border-white/10 hover:bg-white/5' : 'bg-white border-purple-100 shadow-sm hover:bg-purple-50'}`}
       >
          <div className="flex items-center gap-2.5 overflow-hidden">
-           {isEditor && (
+           {quyenSua && (
              <div className="opacity-0 group-hover:opacity-30 hover:!opacity-100 cursor-ns-resize px-1 -ml-1 flex flex-col gap-0.5">
                 <div className="w-1 h-1 rounded-full bg-current"></div>
                 <div className="w-1 h-1 rounded-full bg-current"></div>
@@ -1425,12 +1468,14 @@ function handleDeleteNote(idx) {
              <span className={`text-xs font-semibold truncate ${theme === 'dark' ? 'text-slate-200' : 'text-slate-700'}`} title={firstFile.name}>{firstFile.name}</span>
            </div>
          </div>
-         {isEditor && <button onClick={(e) => { e.stopPropagation(); xoaTaskNhanh(task.id); }} className="opacity-0 group-hover:opacity-100 p-1.5 text-red-500 hover:bg-red-500/20 text-xs rounded transition-all">🗑</button>}
+         {quyenSua && <button onClick={(e) => { e.stopPropagation(); xoaTaskNhanh(task.id); }} className="opacity-0 group-hover:opacity-100 p-1.5 text-red-500 hover:bg-red-500/20 text-xs rounded transition-all">🗑</button>}
       </div>
     )
   }
 
   function TaskCard({ task, index, isEditor }) {
+    const quyenSua = isEditor || currentSpace === 'private';
+    
     const safeNotes = getSafeArray(task.notes);
     const safeAttachments = getSafeArray(task.attachments);
     const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done';
@@ -1438,32 +1483,32 @@ function handleDeleteNote(idx) {
     const outputCount = safeAttachments.filter(f => f.type === 'output').length;
     return (
       <div 
-        draggable={isEditor} 
+        draggable={quyenSua} 
         onDragStart={(e) => {
-            e.dataTransfer.setData("taskId", task.id);
-            e.dataTransfer.setData("sourceStatus", task.status || 'todo');
-            e.dataTransfer.setData("sortIdx", index.toString());
+             e.dataTransfer.setData("taskId", task.id);
+             e.dataTransfer.setData("sourceStatus", task.status || 'todo');
+             e.dataTransfer.setData("sortIdx", index.toString());
         }} 
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
-            e.stopPropagation();
-            if (!isEditor) return;
-            const sourceStatus = e.dataTransfer.getData("sourceStatus");
-            const sortIdx = e.dataTransfer.getData("sortIdx");
-            const targetStatus = task.status || 'todo';
+             e.stopPropagation();
+             if (!quyenSua) return;
+             const sourceStatus = e.dataTransfer.getData("sourceStatus");
+             const sortIdx = e.dataTransfer.getData("sortIdx");
+             const targetStatus = task.status || 'todo';
 
-            if (sourceStatus === targetStatus && sortIdx !== "") {
-                handleDropSort(targetStatus, sortIdx, index);
-            } else {
-                handleDrop(e, targetStatus);
-            }
+             if (sourceStatus === targetStatus && sortIdx !== "") {
+                 handleDropSort(targetStatus, sortIdx, index);
+             } else {
+                 handleDrop(e, targetStatus);
+             }
         }}
         onMouseMove={handleTaskMouseMove}
         onMouseEnter={(e) => handleTaskMouseEnter(e, task)}
         onMouseLeave={handleTaskMouseLeave}
-        className={`group relative flex flex-col p-3 rounded-xl transition-all duration-200 cursor-grab active:cursor-grabbing hover:-translate-y-0.5 hover:shadow-md ${cardBg} ${task.status === 'done' ? 'opacity-60 grayscale' : ''}`}
+        className={`group relative flex flex-col p-3 rounded-xl transition-all duration-200 ${quyenSua ? 'cursor-grab active:cursor-grabbing hover:-translate-y-0.5 hover:shadow-md' : 'cursor-pointer'} ${cardBg} ${task.status === 'done' ? 'opacity-60 grayscale' : ''}`}
       >
-        {isEditor && (
+        {quyenSua && (
           <div className="absolute top-1/2 -left-2 -translate-y-1/2 opacity-0 group-hover:opacity-30 hover:!opacity-100 cursor-ns-resize p-1 flex flex-col gap-0.5">
               <div className="w-1 h-1 rounded-full bg-current"></div>
               <div className="w-1 h-1 rounded-full bg-current"></div>
@@ -1471,14 +1516,14 @@ function handleDeleteNote(idx) {
           </div>
         )}
 
-        {isEditor && (
+        {quyenSua && (
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
             <button onClick={(e) => { e.stopPropagation(); xoaTaskNhanh(task.id); }} className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow-sm ${theme === 'dark' ? 'bg-black/80 hover:bg-red-500 text-white' : 'bg-red-100 hover:bg-red-500 hover:text-white text-red-600'}`}>🗑</button>
           </div>
         )}
         
-        <div className="mb-2 pr-6 pl-2 w-full flex items-center">
-            <h3 className={`font-normal text-[13px] leading-snug truncate w-full cursor-pointer ${theme === 'dark' ? 'text-white' : 'text-slate-800'} ${task.is_completed ? 'line-through opacity-50' : ''}`} onClick={() => moModalXemChiTiet(task)}>{task.title}</h3>
+<div className="mb-2 pr-4 pl-2 w-full flex items-start min-h-[38px]">
+            <h3 className={`font-semibold text-[13px] leading-snug line-clamp-2 whitespace-normal break-words w-full cursor-pointer ${theme === 'dark' ? 'text-slate-100 hover:text-blue-400' : 'text-slate-800 hover:text-blue-600'} ${task.is_completed ? 'line-through opacity-50' : ''}`} onClick={() => moModalXemChiTiet(task)} title={task.title}>{task.title}</h3>
         </div>
         
         <div className="flex gap-1 flex-wrap mt-auto cursor-pointer pl-2" onClick={() => moModalXemChiTiet(task)}>
