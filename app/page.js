@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { layDanhSachTaiKhoan, taoTaiKhoanMoi, datLaiMatKhau, doiQuyenTaiKhoan, xoaTaiKhoan } from './actions/adminAuth'
 
 // === COMPONENT: BỘ TẠO ICON TÀI LIỆU ===
 function getFileIcon(filename, size = 'small') {
@@ -89,8 +90,16 @@ export default function TrangQuanLyChuyenSau() {
   const [quickNoteText, setQuickNoteText] = useState('')
   const [editingNoteIndex, setEditingNoteIndex] = useState(null)
   const [editingNoteText, setEditingNoteText] = useState('')
-  const [deletingTaskId, setDeletingTaskId] = useState(null);
+const [deletingTaskId, setDeletingTaskId] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // === STATE CHO ADMIN PANEL ===
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [isLoadingAdmin, setIsLoadingAdmin] = useState(false);
+  const [adminForm, setAdminForm] = useState({ email: '', password: '', role: 'viewer' });
+  const [editingPasswordId, setEditingPasswordId] = useState(null);
+  const [newPasswordTemp, setNewPasswordTemp] = useState('');
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
@@ -702,6 +711,519 @@ async function thucHienXoaTask() {
   const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
 
+// === CÁC HÀM XỬ LÝ DÀNH CHO ADMIN ===
+  async function loadAdminUsers() {
+      setIsLoadingAdmin(true);
+      const res = await layDanhSachTaiKhoan();
+      if (res.success) {
+          setAdminUsers(res.data);
+      } else {
+          alert("Lỗi lấy danh sách: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminCreateUser(e) {
+      e.preventDefault();
+      if (!adminForm.email || !adminForm.password) return;
+      setIsLoadingAdmin(true);
+      const res = await taoTaiKhoanMoi(adminForm.email, adminForm.password, adminForm.role);
+      if (res.success) {
+          setAdminForm({ email: '', password: '', role: 'viewer' });
+          await loadAdminUsers();
+      } else {
+          alert("Lỗi tạo tài khoản: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminDeleteUser(id) {
+      if (!confirm('Xóa vĩnh viễn tài khoản này?')) return;
+      setIsLoadingAdmin(true);
+      const res = await xoaTaiKhoan(id);
+      if (res.success) await loadAdminUsers();
+      else alert("Lỗi xóa tài khoản: " + res.message);
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminChangeRole(id, newRole) {
+      setIsLoadingAdmin(true);
+      const res = await doiQuyenTaiKhoan(id, newRole);
+      if (res.success) await loadAdminUsers();
+      else alert("Lỗi đổi quyền: " + res.message);
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminResetPassword(id) {
+      if (!newPasswordTemp.trim()) return;
+      setIsLoadingAdmin(true);
+      const res = await datLaiMatKhau(id, newPasswordTemp);
+      if (res.success) {
+          setEditingPasswordId(null);
+          setNewPasswordTemp('');
+          alert("Đổi mật khẩu thành công!");
+      } else {
+          alert("Lỗi đổi mật khẩu: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+// === CÁC HÀM XỬ LÝ DÀNH CHO ADMIN ===
+  async function loadAdminUsers() {
+      setIsLoadingAdmin(true);
+      const res = await layDanhSachTaiKhoan();
+      if (res.success) {
+          setAdminUsers(res.data);
+      } else {
+          alert("Lỗi lấy danh sách: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminCreateUser(e) {
+      e.preventDefault();
+      if (!adminForm.email || !adminForm.password) return;
+      setIsLoadingAdmin(true);
+      const res = await taoTaiKhoanMoi(adminForm.email, adminForm.password, adminForm.role);
+      if (res.success) {
+          setAdminForm({ email: '', password: '', role: 'viewer' });
+          await loadAdminUsers();
+      } else {
+          alert("Lỗi tạo tài khoản: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminDeleteUser(id) {
+      if (!confirm('Xóa vĩnh viễn tài khoản này?')) return;
+      setIsLoadingAdmin(true);
+      const res = await xoaTaiKhoan(id);
+      if (res.success) await loadAdminUsers();
+      else alert("Lỗi xóa tài khoản: " + res.message);
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminChangeRole(id, newRole) {
+      setIsLoadingAdmin(true);
+      const res = await doiQuyenTaiKhoan(id, newRole);
+      if (res.success) await loadAdminUsers();
+      else alert("Lỗi đổi quyền: " + res.message);
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminResetPassword(id) {
+      if (!newPasswordTemp.trim()) return;
+      setIsLoadingAdmin(true);
+      const res = await datLaiMatKhau(id, newPasswordTemp);
+      if (res.success) {
+          setEditingPasswordId(null);
+          setNewPasswordTemp('');
+          alert("Đổi mật khẩu thành công!");
+      } else {
+          alert("Lỗi đổi mật khẩu: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+// === CÁC HÀM XỬ LÝ DÀNH CHO ADMIN ===
+  async function loadAdminUsers() {
+      setIsLoadingAdmin(true);
+      const res = await layDanhSachTaiKhoan();
+      if (res.success) {
+          setAdminUsers(res.data);
+      } else {
+          alert("Lỗi lấy danh sách: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminCreateUser(e) {
+      e.preventDefault();
+      if (!adminForm.email || !adminForm.password) return;
+      setIsLoadingAdmin(true);
+      const res = await taoTaiKhoanMoi(adminForm.email, adminForm.password, adminForm.role);
+      if (res.success) {
+          setAdminForm({ email: '', password: '', role: 'viewer' });
+          await loadAdminUsers();
+      } else {
+          alert("Lỗi tạo tài khoản: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminDeleteUser(id) {
+      if (!confirm('Xóa vĩnh viễn tài khoản này?')) return;
+      setIsLoadingAdmin(true);
+      const res = await xoaTaiKhoan(id);
+      if (res.success) await loadAdminUsers();
+      else alert("Lỗi xóa tài khoản: " + res.message);
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminChangeRole(id, newRole) {
+      setIsLoadingAdmin(true);
+      const res = await doiQuyenTaiKhoan(id, newRole);
+      if (res.success) await loadAdminUsers();
+      else alert("Lỗi đổi quyền: " + res.message);
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminResetPassword(id) {
+      if (!newPasswordTemp.trim()) return;
+      setIsLoadingAdmin(true);
+      const res = await datLaiMatKhau(id, newPasswordTemp);
+      if (res.success) {
+          setEditingPasswordId(null);
+          setNewPasswordTemp('');
+          alert("Đổi mật khẩu thành công!");
+      } else {
+          alert("Lỗi đổi mật khẩu: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+// === CÁC HÀM XỬ LÝ DÀNH CHO ADMIN ===
+  async function loadAdminUsers() {
+      setIsLoadingAdmin(true);
+      const res = await layDanhSachTaiKhoan();
+      if (res.success) {
+          setAdminUsers(res.data);
+      } else {
+          alert("Lỗi lấy danh sách: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminCreateUser(e) {
+      e.preventDefault();
+      if (!adminForm.email || !adminForm.password) return;
+      setIsLoadingAdmin(true);
+      const res = await taoTaiKhoanMoi(adminForm.email, adminForm.password, adminForm.role);
+      if (res.success) {
+          setAdminForm({ email: '', password: '', role: 'viewer' });
+          await loadAdminUsers();
+      } else {
+          alert("Lỗi tạo tài khoản: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminDeleteUser(id) {
+      if (!confirm('Xóa vĩnh viễn tài khoản này?')) return;
+      setIsLoadingAdmin(true);
+      const res = await xoaTaiKhoan(id);
+      if (res.success) await loadAdminUsers();
+      else alert("Lỗi xóa tài khoản: " + res.message);
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminChangeRole(id, newRole) {
+      setIsLoadingAdmin(true);
+      const res = await doiQuyenTaiKhoan(id, newRole);
+      if (res.success) await loadAdminUsers();
+      else alert("Lỗi đổi quyền: " + res.message);
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminResetPassword(id) {
+      if (!newPasswordTemp.trim()) return;
+      setIsLoadingAdmin(true);
+      const res = await datLaiMatKhau(id, newPasswordTemp);
+      if (res.success) {
+          setEditingPasswordId(null);
+          setNewPasswordTemp('');
+          alert("Đổi mật khẩu thành công!");
+      } else {
+          alert("Lỗi đổi mật khẩu: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+// === CÁC HÀM XỬ LÝ DÀNH CHO ADMIN ===
+  async function loadAdminUsers() {
+      setIsLoadingAdmin(true);
+      const res = await layDanhSachTaiKhoan();
+      if (res.success) {
+          setAdminUsers(res.data);
+      } else {
+          alert("Lỗi lấy danh sách: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminCreateUser(e) {
+      e.preventDefault();
+      if (!adminForm.email || !adminForm.password) return;
+      setIsLoadingAdmin(true);
+      const res = await taoTaiKhoanMoi(adminForm.email, adminForm.password, adminForm.role);
+      if (res.success) {
+          setAdminForm({ email: '', password: '', role: 'viewer' });
+          await loadAdminUsers();
+      } else {
+          alert("Lỗi tạo tài khoản: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminDeleteUser(id) {
+      if (!confirm('Xóa vĩnh viễn tài khoản này?')) return;
+      setIsLoadingAdmin(true);
+      const res = await xoaTaiKhoan(id);
+      if (res.success) await loadAdminUsers();
+      else alert("Lỗi xóa tài khoản: " + res.message);
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminChangeRole(id, newRole) {
+      setIsLoadingAdmin(true);
+      const res = await doiQuyenTaiKhoan(id, newRole);
+      if (res.success) await loadAdminUsers();
+      else alert("Lỗi đổi quyền: " + res.message);
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminResetPassword(id) {
+      if (!newPasswordTemp.trim()) return;
+      setIsLoadingAdmin(true);
+      const res = await datLaiMatKhau(id, newPasswordTemp);
+      if (res.success) {
+          setEditingPasswordId(null);
+          setNewPasswordTemp('');
+          alert("Đổi mật khẩu thành công!");
+      } else {
+          alert("Lỗi đổi mật khẩu: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+// === CÁC HÀM XỬ LÝ DÀNH CHO ADMIN ===
+  async function loadAdminUsers() {
+      setIsLoadingAdmin(true);
+      const res = await layDanhSachTaiKhoan();
+      if (res.success) {
+          setAdminUsers(res.data);
+      } else {
+          alert("Lỗi lấy danh sách: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminCreateUser(e) {
+      e.preventDefault();
+      if (!adminForm.email || !adminForm.password) return;
+      setIsLoadingAdmin(true);
+      const res = await taoTaiKhoanMoi(adminForm.email, adminForm.password, adminForm.role);
+      if (res.success) {
+          setAdminForm({ email: '', password: '', role: 'viewer' });
+          await loadAdminUsers();
+      } else {
+          alert("Lỗi tạo tài khoản: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminDeleteUser(id) {
+      if (!confirm('Xóa vĩnh viễn tài khoản này?')) return;
+      setIsLoadingAdmin(true);
+      const res = await xoaTaiKhoan(id);
+      if (res.success) await loadAdminUsers();
+      else alert("Lỗi xóa tài khoản: " + res.message);
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminChangeRole(id, newRole) {
+      setIsLoadingAdmin(true);
+      const res = await doiQuyenTaiKhoan(id, newRole);
+      if (res.success) await loadAdminUsers();
+      else alert("Lỗi đổi quyền: " + res.message);
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminResetPassword(id) {
+      if (!newPasswordTemp.trim()) return;
+      setIsLoadingAdmin(true);
+      const res = await datLaiMatKhau(id, newPasswordTemp);
+      if (res.success) {
+          setEditingPasswordId(null);
+          setNewPasswordTemp('');
+          alert("Đổi mật khẩu thành công!");
+      } else {
+          alert("Lỗi đổi mật khẩu: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+// === CÁC HÀM XỬ LÝ DÀNH CHO ADMIN ===
+  async function loadAdminUsers() {
+      setIsLoadingAdmin(true);
+      const res = await layDanhSachTaiKhoan();
+      if (res.success) {
+          setAdminUsers(res.data);
+      } else {
+          alert("Lỗi lấy danh sách: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminCreateUser(e) {
+      e.preventDefault();
+      if (!adminForm.email || !adminForm.password) return;
+      setIsLoadingAdmin(true);
+      const res = await taoTaiKhoanMoi(adminForm.email, adminForm.password, adminForm.role);
+      if (res.success) {
+          setAdminForm({ email: '', password: '', role: 'viewer' });
+          await loadAdminUsers();
+      } else {
+          alert("Lỗi tạo tài khoản: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminDeleteUser(id) {
+      if (!confirm('Xóa vĩnh viễn tài khoản này?')) return;
+      setIsLoadingAdmin(true);
+      const res = await xoaTaiKhoan(id);
+      if (res.success) await loadAdminUsers();
+      else alert("Lỗi xóa tài khoản: " + res.message);
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminChangeRole(id, newRole) {
+      setIsLoadingAdmin(true);
+      const res = await doiQuyenTaiKhoan(id, newRole);
+      if (res.success) await loadAdminUsers();
+      else alert("Lỗi đổi quyền: " + res.message);
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminResetPassword(id) {
+      if (!newPasswordTemp.trim()) return;
+      setIsLoadingAdmin(true);
+      const res = await datLaiMatKhau(id, newPasswordTemp);
+      if (res.success) {
+          setEditingPasswordId(null);
+          setNewPasswordTemp('');
+          alert("Đổi mật khẩu thành công!");
+      } else {
+          alert("Lỗi đổi mật khẩu: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  // === CÁC HÀM XỬ LÝ DÀNH CHO ADMIN ===
+  async function loadAdminUsers() {
+      setIsLoadingAdmin(true);
+      const res = await layDanhSachTaiKhoan();
+      if (res.success) {
+          setAdminUsers(res.data);
+      } else {
+          alert("Lỗi lấy danh sách: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminCreateUser(e) {
+      e.preventDefault();
+      if (!adminForm.email || !adminForm.password) return;
+      setIsLoadingAdmin(true);
+      const res = await taoTaiKhoanMoi(adminForm.email, adminForm.password, adminForm.role);
+      if (res.success) {
+          setAdminForm({ email: '', password: '', role: 'viewer' });
+          await loadAdminUsers();
+      } else {
+          alert("Lỗi tạo tài khoản: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminDeleteUser(id) {
+      if (!confirm('Xóa vĩnh viễn tài khoản này?')) return;
+      setIsLoadingAdmin(true);
+      const res = await xoaTaiKhoan(id);
+      if (res.success) await loadAdminUsers();
+      else alert("Lỗi xóa tài khoản: " + res.message);
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminChangeRole(id, newRole) {
+      setIsLoadingAdmin(true);
+      const res = await doiQuyenTaiKhoan(id, newRole);
+      if (res.success) await loadAdminUsers();
+      else alert("Lỗi đổi quyền: " + res.message);
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminResetPassword(id) {
+      if (!newPasswordTemp.trim()) return;
+      setIsLoadingAdmin(true);
+      const res = await datLaiMatKhau(id, newPasswordTemp);
+      if (res.success) {
+          setEditingPasswordId(null);
+          setNewPasswordTemp('');
+          alert("Đổi mật khẩu thành công!");
+      } else {
+          alert("Lỗi đổi mật khẩu: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+// === CÁC HÀM XỬ LÝ DÀNH CHO ADMIN ===
+  async function loadAdminUsers() {
+      setIsLoadingAdmin(true);
+      const res = await layDanhSachTaiKhoan();
+      if (res.success) {
+          setAdminUsers(res.data);
+      } else {
+          alert("Lỗi lấy danh sách: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminCreateUser(e) {
+      e.preventDefault();
+      if (!adminForm.email || !adminForm.password) return;
+      setIsLoadingAdmin(true);
+      const res = await taoTaiKhoanMoi(adminForm.email, adminForm.password, adminForm.role);
+      if (res.success) {
+          setAdminForm({ email: '', password: '', role: 'viewer' });
+          await loadAdminUsers();
+      } else {
+          alert("Lỗi tạo tài khoản: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminDeleteUser(id) {
+      if (!confirm('Xóa vĩnh viễn tài khoản này?')) return;
+      setIsLoadingAdmin(true);
+      const res = await xoaTaiKhoan(id);
+      if (res.success) await loadAdminUsers();
+      else alert("Lỗi xóa tài khoản: " + res.message);
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminChangeRole(id, newRole) {
+      setIsLoadingAdmin(true);
+      const res = await doiQuyenTaiKhoan(id, newRole);
+      if (res.success) await loadAdminUsers();
+      else alert("Lỗi đổi quyền: " + res.message);
+      setIsLoadingAdmin(false);
+  }
+
+  async function handleAdminResetPassword(id) {
+      if (!newPasswordTemp.trim()) return;
+      setIsLoadingAdmin(true);
+      const res = await datLaiMatKhau(id, newPasswordTemp);
+      if (res.success) {
+          setEditingPasswordId(null);
+          setNewPasswordTemp('');
+          alert("Đổi mật khẩu thành công!");
+      } else {
+          alert("Lỗi đổi mật khẩu: " + res.message);
+      }
+      setIsLoadingAdmin(false);
+  }
+
   const bgMain = theme === 'dark' ? 'bg-[#0b0c10]' : 'bg-liquid-light';
   const panelBg = theme === 'dark' ? 'bg-[#181a20]/90 backdrop-blur-2xl' : 'bg-white/70 backdrop-blur-xl';
   const textMain = theme === 'dark' ? 'text-white' : 'text-slate-800';
@@ -758,10 +1280,12 @@ async function thucHienXoaTask() {
             ))}
           </div>
 
-          {/* QUẢN LÝ THÀNH VIÊN - CHỈ HIỂN THỊ VỚI ADMIN KHÔNG CÓ TRÍCH XUẤT PHỨC TẠP */}
+{/* BẢNG ĐIỀU KHIỂN QUẢN TRỊ VIÊN CẤP CAO */}
           {isAdmin && (
-            <div className={`p-3 border-t text-[10px] uppercase font-black tracking-wider opacity-30 text-center ${theme === 'dark' ? 'border-white/5' : 'border-white/30'}`}>
-                ⚙️ Quản trị viên hệ thống
+            <div className={`p-3 border-t ${theme === 'dark' ? 'border-white/5' : 'border-white/30'}`}>
+              <button onClick={() => { setIsAdminModalOpen(true); loadAdminUsers(); }} className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm border ${theme === 'dark' ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/30' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'}`}>
+                ⚙️ Quản trị hệ thống
+              </button>
             </div>
           )}
 
@@ -1412,6 +1936,110 @@ async function thucHienXoaTask() {
                   <button disabled={isDeleting} onClick={thucHienXoaTask} className="flex-1 py-3 rounded-xl text-sm font-bold bg-red-500 hover:bg-red-600 text-white transition-colors flex justify-center items-center shadow-lg shadow-red-500/30">
                     {isDeleting ? 'Đang xử lý...' : 'Đồng ý Xóa'}
                   </button>
+                </div>
+              </div>
+            </div>
+</div>
+        )}
+
+        {/* MODAL ADMIN PANEL */}
+        {isAdminModalOpen && isAdmin && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 sm:p-10 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+            <div className={`relative w-full max-w-4xl h-full max-h-[80vh] flex flex-col rounded-3xl overflow-hidden shadow-2xl border ${theme === 'dark' ? 'bg-[#121212] border-white/10' : 'bg-slate-50 border-gray-200'}`}>
+              <div className={`flex justify-between items-center p-5 border-b shrink-0 ${theme === 'dark' ? 'bg-[#1a1a24] border-white/10' : 'bg-white border-gray-200'}`}>
+                <div>
+                  <h2 className={`text-xl font-black flex items-center gap-2 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>⚙️ BẢNG QUẢN TRỊ HỆ THỐNG</h2>
+                  <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Quản lý tài khoản, phân quyền và mật khẩu</p>
+                </div>
+                <button onClick={() => setIsAdminModalOpen(false)} className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${theme === 'dark' ? 'bg-white/10 hover:bg-red-500 text-white' : 'bg-slate-200 hover:bg-red-50 hover:text-red-600 text-slate-600'}`}>✕</button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-5 sm:p-8 flex flex-col lg:flex-row gap-8 custom-scrollbar">
+                
+                {/* CỘT TRÁI: THÊM TÀI KHOẢN */}
+                <div className="w-full lg:w-1/3 shrink-0">
+                  <div className={`p-5 rounded-2xl border shadow-sm ${theme === 'dark' ? 'bg-[#1a1a24] border-white/10' : 'bg-white border-gray-200'}`}>
+                    <h3 className={`text-sm font-bold uppercase tracking-widest mb-4 pb-3 border-b ${theme === 'dark' ? 'text-slate-300 border-white/10' : 'text-slate-700 border-gray-100'}`}>+ Tạo tài khoản mới</h3>
+                    <form onSubmit={handleAdminCreateUser} className="space-y-4">
+                      <div>
+                        <label className={`text-[10px] font-bold uppercase mb-1.5 block ${textMuted}`}>Email đăng nhập</label>
+                        <input required type="email" value={adminForm.email} onChange={e => setAdminForm({...adminForm, email: e.target.value})} className={`w-full p-2.5 text-sm rounded-xl border outline-none focus:ring-2 focus:ring-blue-500 ${theme === 'dark' ? 'bg-black/30 border-white/10 text-white' : 'bg-slate-50 border-gray-200 text-slate-800'}`} placeholder="admin@ict.com" />
+                      </div>
+                      <div>
+                        <label className={`text-[10px] font-bold uppercase mb-1.5 block ${textMuted}`}>Mật khẩu</label>
+                        <input required minLength={6} type="text" value={adminForm.password} onChange={e => setAdminForm({...adminForm, password: e.target.value})} className={`w-full p-2.5 text-sm rounded-xl border outline-none focus:ring-2 focus:ring-blue-500 ${theme === 'dark' ? 'bg-black/30 border-white/10 text-white' : 'bg-slate-50 border-gray-200 text-slate-800'}`} placeholder="Mật khẩu ít nhất 6 ký tự" />
+                      </div>
+                      <div>
+                        <label className={`text-[10px] font-bold uppercase mb-1.5 block ${textMuted}`}>Cấp quyền</label>
+                        <select value={adminForm.role} onChange={e => setAdminForm({...adminForm, role: e.target.value})} className={`w-full p-2.5 text-sm rounded-xl border outline-none focus:ring-2 focus:ring-blue-500 ${theme === 'dark' ? 'bg-black/30 border-white/10 text-white' : 'bg-slate-50 border-gray-200 text-slate-800'}`}>
+                          <option value="viewer">Cấp 3 (Viewer) - Bị giới hạn 100MB</option>
+                          <option value="editor">Cấp 2 (Editor) - Quản lý</option>
+                          <option value="admin">Cấp 1 (Admin) - Toàn quyền</option>
+                        </select>
+                      </div>
+                      <button disabled={isLoadingAdmin} type="submit" className={`w-full py-3 rounded-xl text-sm font-bold text-white transition-all shadow-md ${isLoadingAdmin ? 'bg-slate-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20'}`}>
+                        {isLoadingAdmin ? 'Đang xử lý...' : 'Thêm người dùng'}
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
+                {/* CỘT PHẢI: DANH SÁCH TÀI KHOẢN */}
+                <div className="w-full lg:w-2/3 flex flex-col gap-4">
+                  {isLoadingAdmin && adminUsers.length === 0 ? (
+                    <div className="flex-1 flex items-center justify-center italic opacity-50 text-sm">Đang tải dữ liệu...</div>
+                  ) : (
+                    adminUsers.map((u, i) => (
+                      <div key={u.id} className={`p-4 rounded-2xl border shadow-sm flex flex-col sm:flex-row gap-4 justify-between transition-all ${theme === 'dark' ? 'bg-[#1a1a24] border-white/10 hover:bg-white/5' : 'bg-white border-gray-200 hover:border-blue-300'}`}>
+                        
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${u.role === 'admin' ? 'bg-red-500/20 text-red-500' : u.role === 'editor' ? 'bg-blue-500/20 text-blue-500' : 'bg-green-500/20 text-green-500'}`}>
+                              {u.role === 'admin' ? 'Cấp 1' : u.role === 'editor' ? 'Cấp 2' : 'Cấp 3'}
+                            </span>
+                            <span className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>{u.email}</span>
+                            {currentUser?.id === u.id && <span className="text-[9px] bg-yellow-500 text-white px-1.5 rounded font-bold">Bạn</span>}
+                          </div>
+                          <div className={`text-[10px] ${textMuted}`}>ID: {u.id.split('-')[0]}... • Tham gia: {new Date(u.created_at).toLocaleDateString('vi-VN')}</div>
+                          
+                          {/* ĐỔI MẬT KHẨU */}
+                          {editingPasswordId === u.id ? (
+                            <div className="flex items-center gap-2 mt-3 animate-in fade-in slide-in-from-left-2">
+                              <input type="text" autoFocus value={newPasswordTemp} onChange={e => setNewPasswordTemp(e.target.value)} placeholder="Nhập mật khẩu mới..." className={`w-40 px-2 py-1 text-xs rounded border outline-none ${theme === 'dark' ? 'bg-black/30 border-white/20' : 'bg-slate-50 border-gray-300'}`} />
+                              <button onClick={() => handleAdminResetPassword(u.id)} disabled={isLoadingAdmin} className="text-[10px] font-bold bg-blue-600 hover:bg-blue-500 text-white px-2 py-1.5 rounded shadow">Lưu</button>
+                              <button onClick={() => { setEditingPasswordId(null); setNewPasswordTemp(''); }} className="text-[10px] font-bold px-2 py-1.5 opacity-50 hover:opacity-100">Hủy</button>
+                            </div>
+                          ) : (
+                            <div className="mt-2">
+                              <button onClick={() => { setEditingPasswordId(u.id); setNewPasswordTemp(''); }} className={`text-[10px] font-bold px-2 py-1 rounded border transition-colors ${theme === 'dark' ? 'border-white/20 hover:bg-white/10' : 'border-gray-300 hover:bg-slate-100'}`}>🔑 Đổi mật khẩu</button>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0 border-t sm:border-t-0 sm:border-l pt-3 sm:pt-0 sm:pl-4 border-dashed border-gray-300 dark:border-white/10">
+                          <select 
+                            disabled={currentUser?.id === u.id || isLoadingAdmin}
+                            value={u.role} 
+                            onChange={(e) => handleAdminChangeRole(u.id, e.target.value)} 
+                            className={`text-xs font-bold p-1.5 rounded outline-none border cursor-pointer ${theme === 'dark' ? 'bg-black/50 border-white/20 text-white' : 'bg-slate-50 border-gray-200 text-slate-800'}`}
+                          >
+                            <option value="viewer">Cấp 3</option>
+                            <option value="editor">Cấp 2</option>
+                            <option value="admin">Cấp 1</option>
+                          </select>
+                          
+                          <button 
+                            disabled={currentUser?.id === u.id || isLoadingAdmin}
+                            onClick={() => handleAdminDeleteUser(u.id)} 
+                            className="w-8 h-8 flex items-center justify-center rounded bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Xóa tài khoản"
+                          >
+                            🗑
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
