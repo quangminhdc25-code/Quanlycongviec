@@ -104,7 +104,8 @@ const [deletingTaskId, setDeletingTaskId] = useState(null);
   const [editingPasswordId, setEditingPasswordId] = useState(null);
   const [newPasswordTemp, setNewPasswordTemp] = useState('');
 
-  const [searchQuery, setSearchQuery] = useState('')
+ const [searchQuery, setSearchQuery] = useState('')
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false) // Trạng thái đóng/mở Menu trên điện thoại
   const [searchResults, setSearchResults] = useState([])
   const [isSearchOpen, setIsSearchOpen] = useState(false)
 
@@ -1235,18 +1236,24 @@ async function thucHienXoaTask() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{__html: `
+<style dangerouslySetInnerHTML={{__html: `
         .font-custom { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; }
-        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar { width: 6px; height: 4px; }
+        @media (max-width: 1024px) { .hide-scrollbar-on-mobile::-webkit-scrollbar { display: none; } .hide-scrollbar-on-mobile { -ms-overflow-style: none; scrollbar-width: none; } }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.4); border-radius: 10px; }
         .bg-liquid-light { background: linear-gradient(110deg, #bcf8e8 0%, #ffcdec 45%, #d1bbf9 100%); background-attachment: fixed; }
       `}} />
 
       <div className={`flex h-screen w-screen font-custom overflow-hidden transition-colors duration-500 ${bgMain} p-2 sm:p-3 gap-3 ${textMain}`}>
-        
-        {/* SIDEBAR */}
-        <aside className={`w-64 flex flex-col shrink-0 rounded-2xl shadow-sm overflow-hidden transition-all duration-300 ${panelBg} ${theme === 'dark' ? 'border border-white/5' : 'border border-white/40'}`}>
+            
+            {/* OVERLAY DI ĐỘNG (Lớp phủ làm mờ nền khi mở menu trên điện thoại) */}
+            {isMobileMenuOpen && (
+              <div className="md:hidden fixed inset-0 z-[150] bg-black/50 backdrop-blur-sm transition-opacity" onClick={() => setIsMobileMenuOpen(false)}></div>
+            )}
+
+            {/* SIDEBAR (Responsive: Ẩn đi trên điện thoại, trượt ra khi bấm nút) */}
+            <aside className={`absolute md:relative z-[200] md:z-auto h-[calc(100%-1rem)] sm:h-[calc(100%-1.5rem)] md:h-auto w-64 flex flex-col shrink-0 rounded-2xl shadow-2xl md:shadow-sm overflow-hidden transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-[120%] md:translate-x-0'} ${panelBg} ${theme === 'dark' ? 'border border-white/5' : 'border border-white/40'}`}>
           <div className={`p-4 border-b ${theme === 'dark' ? 'border-white/5' : 'border-white/30'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -1299,12 +1306,18 @@ async function thucHienXoaTask() {
           )}
         </aside>
 
-        <main className={`flex-1 flex flex-col relative rounded-2xl shadow-sm overflow-hidden transition-all duration-300 ${panelBg} ${theme === 'dark' ? 'border border-white/5' : 'border border-white/40'}`}>
-          
-          <div className={`w-full flex justify-between items-center p-4 sm:p-5 pb-0 shrink-0 gap-4 z-40 relative transition-all duration-700`}>
-            
-            <div className="flex-1 max-w-xl relative">
-              <div className={`flex items-center px-4 py-2 rounded-full shadow-sm backdrop-blur-xl border transition-all ${theme === 'dark' ? 'bg-black/30 border-white/10 text-white focus-within:border-blue-500/50 focus-within:bg-black/50' : 'bg-white/60 border-white/60 text-slate-800 focus-within:border-blue-400 focus-within:bg-white'}`}>
+        <main className={`flex-1 flex flex-col relative w-full min-w-0 rounded-2xl shadow-sm overflow-hidden transition-all duration-300 ${panelBg} ${theme === 'dark' ? 'border border-white/5' : 'border border-white/40'}`}>
+              
+              {/* THANH HEADER ĐIỀU HƯỚNG TỐI ƯU MOBILE (Tự động cuộn/xuống dòng trên màn hình nhỏ) */}
+              <div className={`w-full flex flex-col xl:flex-row justify-between items-start xl:items-center p-4 sm:p-5 pb-0 shrink-0 gap-3 z-40 relative transition-all duration-700`}>
+                
+                <div className="flex w-full xl:w-auto flex-1 max-w-xl items-center gap-3 relative">
+                  {/* NÚT MENU HAMBURGER (CHỈ HIỆN TRÊN MOBILE) */}
+                  <button onClick={() => setIsMobileMenuOpen(true)} className={`md:hidden shrink-0 p-2 rounded-xl border shadow-sm transition-colors ${theme === 'dark' ? 'bg-white/10 border-white/10 text-white hover:bg-white/20' : 'bg-white border-gray-200 text-slate-700 hover:bg-gray-50'}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+                  </button>
+
+                  <div className={`flex-1 flex items-center px-4 py-2 rounded-full shadow-sm backdrop-blur-xl border transition-all ${theme === 'dark' ? 'bg-black/30 border-white/10 text-white focus-within:border-blue-500/50 focus-within:bg-black/50' : 'bg-white/60 border-white/60 text-slate-800 focus-within:border-blue-400 focus-within:bg-white'}`}>
                 <span className="opacity-50 mr-2 text-sm">🔍</span>
                 <input type="text" value={searchQuery} onChange={handleSearch} placeholder="Tìm kiếm công việc, tài liệu..." className="flex-1 bg-transparent border-none focus:outline-none text-sm font-normal placeholder-opacity-50" />
                 {searchQuery && <button onClick={() => {setSearchQuery(''); setIsSearchOpen(false)}} className="opacity-50 hover:opacity-100 text-sm font-bold ml-2">✕</button>}
@@ -1343,36 +1356,38 @@ async function thucHienXoaTask() {
               )}
 </div>
 
-            {/* HAI TAB CHUYỂN ĐỔI KHÔNG GIAN ĐƯỢC DỜI LÊN ĐÂY */}
-            <div className={`flex shrink-0 p-1 rounded-full shadow-inner border backdrop-blur-md ${theme === 'dark' ? 'bg-black/30 border-white/10' : 'bg-white/50 border-white/60'}`}>
-              <button 
-                onClick={() => setCurrentSpace('shared')}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${currentSpace === 'shared' ? 'bg-blue-500 text-white shadow-md' : theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'}`}
-              >
-                Tổng hợp
-              </button>
-              <button 
-                onClick={() => setCurrentSpace('private')}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${currentSpace === 'private' ? 'bg-purple-500 text-white shadow-md' : theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'}`}
-              >
-                Cá nhân
-              </button>
-            </div>
+                {/* KHU VỰC CÁC NÚT ĐIỀU HƯỚNG BÊN PHẢI (Cuộn ngang trên Mobile) */}
+                <div className="w-full xl:w-auto flex overflow-x-auto gap-3 items-center pb-2 xl:pb-0 custom-scrollbar hide-scrollbar-on-mobile">
+                  {/* HAI TAB CHUYỂN ĐỔI KHÔNG GIAN */}
+                  <div className={`flex shrink-0 p-1 rounded-full shadow-inner border backdrop-blur-md ${theme === 'dark' ? 'bg-black/30 border-white/10' : 'bg-white/50 border-white/60'}`}>
+                    <button 
+                      onClick={() => setCurrentSpace('shared')}
+                      className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${currentSpace === 'shared' ? 'bg-blue-500 text-white shadow-md' : theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'}`}
+                    >
+                      Tổng hợp
+                    </button>
+                    <button 
+                      onClick={() => setCurrentSpace('private')}
+                      className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${currentSpace === 'private' ? 'bg-purple-500 text-white shadow-md' : theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'}`}
+                    >
+                      Cá nhân
+                    </button>
+                  </div>
 
-            <div className="flex gap-3 items-center">
-              {selectedProject && (
-                <div className={`flex items-center p-1 rounded-full border ${theme === 'dark' ? 'bg-black/30 border-white/10' : 'bg-white/40 border-white/60 shadow-sm'}`}>
-                    <button onClick={() => setViewMode('kanban')} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${viewMode === 'kanban' ? (theme === 'dark' ? 'bg-white/20 text-white shadow' : 'bg-white text-slate-800 shadow-sm') : 'opacity-50 hover:opacity-100'}`}>Bảng</button>
-                    <button onClick={() => setViewMode('calendar')} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${viewMode === 'calendar' ? (theme === 'dark' ? 'bg-white/20 text-white shadow' : 'bg-white text-slate-800 shadow-sm') : 'opacity-50 hover:opacity-100'}`}>Lịch</button>
-                    <button onClick={() => setViewMode('dashboard')} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${viewMode === 'dashboard' ? (theme === 'dark' ? 'bg-white/20 text-white shadow' : 'bg-white text-slate-800 shadow-sm') : 'opacity-50 hover:opacity-100'}`}>Thống kê</button>
+                  {selectedProject && (
+                    <div className={`flex shrink-0 items-center p-1 rounded-full border ${theme === 'dark' ? 'bg-black/30 border-white/10' : 'bg-white/40 border-white/60 shadow-sm'}`}>
+                        <button onClick={() => setViewMode('kanban')} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${viewMode === 'kanban' ? (theme === 'dark' ? 'bg-white/20 text-white shadow' : 'bg-white text-slate-800 shadow-sm') : 'opacity-50 hover:opacity-100'}`}>Bảng</button>
+                        <button onClick={() => setViewMode('calendar')} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${viewMode === 'calendar' ? (theme === 'dark' ? 'bg-white/20 text-white shadow' : 'bg-white text-slate-800 shadow-sm') : 'opacity-50 hover:opacity-100'}`}>Lịch</button>
+                        <button onClick={() => setViewMode('dashboard')} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${viewMode === 'dashboard' ? (theme === 'dark' ? 'bg-white/20 text-white shadow' : 'bg-white text-slate-800 shadow-sm') : 'opacity-50 hover:opacity-100'}`}>Thống kê</button>
+                    </div>
+                  )}
+                  
+                  <button onClick={toggleTheme} className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 border shadow-sm outline-none shrink-0 overflow-hidden relative ml-auto xl:ml-0 ${theme === 'dark' ? 'bg-black/50 border-white/10 text-yellow-400 hover:bg-black/70' : 'bg-white border-white/60 text-slate-600 hover:bg-white'}`}>
+                     <div className={`absolute transition-all duration-500 ${theme === 'dark' ? 'rotate-0 opacity-100 scale-100' : '-rotate-90 opacity-0 scale-50'}`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></div>
+                     <div className={`absolute transition-all duration-500 ${theme === 'light' ? 'rotate-0 opacity-100 scale-100' : 'rotate-90 opacity-0 scale-50'}`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></div>
+                  </button>
                 </div>
-              )}
-              <button onClick={toggleTheme} className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 border shadow-sm outline-none shrink-0 overflow-hidden relative ${theme === 'dark' ? 'bg-black/50 border-white/10 text-yellow-400 hover:bg-black/70' : 'bg-white border-white/60 text-slate-600 hover:bg-white'}`}>
-                 <div className={`absolute transition-all duration-500 ${theme === 'dark' ? 'rotate-0 opacity-100 scale-100' : '-rotate-90 opacity-0 scale-50'}`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></div>
-                 <div className={`absolute transition-all duration-500 ${theme === 'light' ? 'rotate-0 opacity-100 scale-100' : 'rotate-90 opacity-0 scale-50'}`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></div>
-              </button>
-            </div>
-          </div>
+              </div>
 
           <div className="flex-1 overflow-y-auto">
             {!selectedProject ? (
