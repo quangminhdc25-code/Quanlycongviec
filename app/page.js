@@ -32,9 +32,12 @@ function getFileIcon(filename, size = 'small') {
   } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) { 
     strokeColor = 'stroke-purple-500'; bgColor = 'bg-purple-500/10'; textColor = 'text-purple-500 border-purple-500/20'; badgeText = 'IMG';
     innerIcon = <circle cx="12" cy="13" r="3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />;
-  } else if (['zip', 'rar', '7z'].includes(ext)) { 
+} else if (['zip', 'rar', '7z'].includes(ext)) { 
     strokeColor = 'stroke-yellow-500'; bgColor = 'bg-yellow-500/10'; textColor = 'text-yellow-600 border-yellow-500/20'; badgeText = 'ZIP';
     innerIcon = <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 11v4m0 0l-2-2m2 2l2-2" />;
+  } else if (['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'].includes(ext)) {
+    strokeColor = 'stroke-pink-500'; bgColor = 'bg-pink-500/10'; textColor = 'text-pink-600 border-pink-500/20'; badgeText = 'VID';
+    innerIcon = <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />;
   }
 
   if (isLarge) {
@@ -1768,10 +1771,12 @@ async function thucHienXoaTask() {
                    </div>
                 </div>
                 <div className="flex-1 w-full bg-slate-100 dark:bg-[#0b0c10] relative">
-                   {selectedFile.name.toLowerCase().match(/\.(doc|docx|xls|xlsx|ppt|pptx|pdf)$/i) ? (
+{selectedFile.name.toLowerCase().match(/\.(doc|docx|xls|xlsx|ppt|pptx|pdf)$/i) ? (
                         <iframe src={selectedFile.name.toLowerCase().endsWith('pdf') ? selectedFile.url : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url)}`} className="w-full h-full border-none bg-white" />
                     ) : selectedFile.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                         <div className="w-full h-full flex items-center justify-center p-6"><img src={selectedFile.url} className="max-w-full max-h-full object-contain rounded-xl shadow-lg" /></div>
+                    ) : selectedFile.name.toLowerCase().match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i) ? (
+                        <div className="w-full h-full flex items-center justify-center p-0 bg-black/95"><video src={selectedFile.url} controls autoPlay className="w-full h-full object-contain outline-none shadow-2xl" /></div>
                     ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-slate-500"><div className="text-5xl mb-4">📄</div><p>Hệ thống không hỗ trợ xem trước định dạng này.</p></div>
                     )}
@@ -1901,11 +1906,13 @@ async function thucHienXoaTask() {
                   
                   <div className={`w-full md:w-[55%] flex flex-col relative pt-6 ${theme === 'dark' ? 'bg-[#121212]' : 'bg-slate-100'}`} onMouseDown={(e) => e.stopPropagation()}>
                     <button onClick={dongModalTask} className={`absolute top-6 right-4 z-[120] w-8 h-8 rounded-full shadow-md flex items-center justify-center font-bold transition-colors ${theme === 'dark' ? 'bg-white/10 hover:bg-red-500 text-white' : 'bg-white/80 hover:bg-red-50 hover:text-red-600'}`}>✕</button>
-                    {selectedFile ? (
+{selectedFile ? (
                       selectedFile.name.toLowerCase().match(/\.(doc|docx|xls|xlsx|ppt|pptx|pdf)$/i) ? (
                           <iframe src={selectedFile.name.toLowerCase().endsWith('pdf') ? selectedFile.url : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url)}`} className="w-full h-full border-none bg-white rounded-br-2xl" />
                       ) : selectedFile.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                           <div className="flex-1 flex items-center justify-center p-6"><img src={selectedFile.url} className="max-w-full max-h-full object-contain rounded-xl shadow-lg" /></div>
+                      ) : selectedFile.name.toLowerCase().match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i) ? (
+                          <div className="flex-1 flex items-center justify-center p-0 bg-black/95 rounded-br-2xl overflow-hidden"><video src={selectedFile.url} controls autoPlay className="w-full h-full object-contain outline-none shadow-2xl" /></div>
                       ) : (
                           <div className="flex-1 flex flex-col items-center justify-center p-6 text-center"><div className="mb-6">{getFileIcon(selectedFile.name, 'large')}</div><p className="text-lg mb-6">{selectedFile.name}</p><a href={selectedFile.url} target="_blank" className="px-6 py-3 rounded-full bg-blue-600 text-white font-bold shadow-md">Tải xuống</a></div>
                       )
