@@ -555,7 +555,63 @@ const handleDrop = async (e, newStatus) => {
     await supabase.from('tasks').update({ status: newStatus, is_completed: newStatus === 'done' }).eq('id', taskId);
     await taiDuLieuHienTai();
   };
+// === LOGIC KÉO THẢ TOÀN DIỆN (PC & MOBILE) ===
+  
+  // 1. Bùa phép kéo thả bằng ngón tay trên điện thoại (Ấn giữ 200ms để kéo)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const script = document.createElement('script');
+    script.src = "https://cdn.jsdelivr.net/npm/mobile-drag-drop@3.0.0-rc.1/index.min.js";
+    script.async = true;
+    script.onload = () => {
+      const css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = 'https://cdn.jsdelivr.net/npm/mobile-drag-drop@3.0.0-rc.1/default.css';
+      document.head.appendChild(css);
+      window.MobileDragDrop.polyfill({ holdToDrag: 200 });
+    };
+    document.body.appendChild(script);
+  }, []);
 
+  // 2. Xử lý khi bắt đầu nhấc thẻ lên (Hỗ trợ cả đổi cột lẫn sắp xếp)
+  const handleDragStartCard = (e, task, index) => {
+    const quyenSua = isEditor || currentSpace === 'private';
+    if (!quyenSua) { e.preventDefault(); return; }
+    
+    // Dữ liệu dành cho việc Đổi Cột
+    e.dataTransfer.setData("taskId", task.id);
+    e.dataTransfer.setData("sourceStatus", task.status);
+    
+    // Dữ liệu tương thích với logic Sắp Xếp cũ của bạn
+    e.dataTransfer.setData("text/plain", index);
+    e.dataTransfer.setData("status", task.status);
+  };
+
+  // 3. Xử lý khi thả thẻ vào một Cột mới
+  const handleDropToColumnArea = async (e, targetStatus) => {
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData("taskId");
+    const sourceStatus = e.dataTransfer.getData("sourceStatus");
+
+    // Nếu thả vào cùng cột cũ hoặc không có ID thì bỏ qua
+    if (!taskId || sourceStatus === targetStatus) return;
+
+    const isCompleted = targetStatus === 'done';
+
+    // Cập nhật giao diện ngay lập tức cho mượt mà
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: targetStatus, is_completed: isCompleted } : t));
+
+    // Đẩy dữ liệu lên Supabase
+    const { error } = await supabase
+      .from('tasks')
+      .update({ status: targetStatus, is_completed: isCompleted })
+      .eq('id', taskId);
+
+    if (error) {
+      alert("Lỗi chuyển trạng thái: " + error.message);
+      await taiDuLieuHienTai(); // Trả lại vị trí cũ nếu lỗi mạng
+    }
+  };
   const handleDropSort = (status, dragIndex, dropIndex) => {
     const quyenSua = isEditor || currentSpace === 'private';
     if (!quyenSua) return;
@@ -772,460 +828,18 @@ async function thucHienXoaTask() {
       setIsLoadingAdmin(false);
   }
 
-// === CÁC HÀM XỬ LÝ DÀNH CHO ADMIN ===
-  async function loadAdminUsers() {
-      setIsLoadingAdmin(true);
-      const res = await layDanhSachTaiKhoan();
-      if (res.success) {
-          setAdminUsers(res.data);
-      } else {
-          alert("Lỗi lấy danh sách: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminCreateUser(e) {
-      e.preventDefault();
-      if (!adminForm.email || !adminForm.password) return;
-      setIsLoadingAdmin(true);
-      const res = await taoTaiKhoanMoi(adminForm.email, adminForm.password, adminForm.role);
-      if (res.success) {
-          setAdminForm({ email: '', password: '', role: 'viewer' });
-          await loadAdminUsers();
-      } else {
-          alert("Lỗi tạo tài khoản: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminDeleteUser(id) {
-      if (!confirm('Xóa vĩnh viễn tài khoản này?')) return;
-      setIsLoadingAdmin(true);
-      const res = await xoaTaiKhoan(id);
-      if (res.success) await loadAdminUsers();
-      else alert("Lỗi xóa tài khoản: " + res.message);
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminChangeRole(id, newRole) {
-      setIsLoadingAdmin(true);
-      const res = await doiQuyenTaiKhoan(id, newRole);
-      if (res.success) await loadAdminUsers();
-      else alert("Lỗi đổi quyền: " + res.message);
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminResetPassword(id) {
-      if (!newPasswordTemp.trim()) return;
-      setIsLoadingAdmin(true);
-      const res = await datLaiMatKhau(id, newPasswordTemp);
-      if (res.success) {
-          setEditingPasswordId(null);
-          setNewPasswordTemp('');
-          alert("Đổi mật khẩu thành công!");
-      } else {
-          alert("Lỗi đổi mật khẩu: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-// === CÁC HÀM XỬ LÝ DÀNH CHO ADMIN ===
-  async function loadAdminUsers() {
-      setIsLoadingAdmin(true);
-      const res = await layDanhSachTaiKhoan();
-      if (res.success) {
-          setAdminUsers(res.data);
-      } else {
-          alert("Lỗi lấy danh sách: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminCreateUser(e) {
-      e.preventDefault();
-      if (!adminForm.email || !adminForm.password) return;
-      setIsLoadingAdmin(true);
-      const res = await taoTaiKhoanMoi(adminForm.email, adminForm.password, adminForm.role);
-      if (res.success) {
-          setAdminForm({ email: '', password: '', role: 'viewer' });
-          await loadAdminUsers();
-      } else {
-          alert("Lỗi tạo tài khoản: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminDeleteUser(id) {
-      if (!confirm('Xóa vĩnh viễn tài khoản này?')) return;
-      setIsLoadingAdmin(true);
-      const res = await xoaTaiKhoan(id);
-      if (res.success) await loadAdminUsers();
-      else alert("Lỗi xóa tài khoản: " + res.message);
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminChangeRole(id, newRole) {
-      setIsLoadingAdmin(true);
-      const res = await doiQuyenTaiKhoan(id, newRole);
-      if (res.success) await loadAdminUsers();
-      else alert("Lỗi đổi quyền: " + res.message);
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminResetPassword(id) {
-      if (!newPasswordTemp.trim()) return;
-      setIsLoadingAdmin(true);
-      const res = await datLaiMatKhau(id, newPasswordTemp);
-      if (res.success) {
-          setEditingPasswordId(null);
-          setNewPasswordTemp('');
-          alert("Đổi mật khẩu thành công!");
-      } else {
-          alert("Lỗi đổi mật khẩu: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-// === CÁC HÀM XỬ LÝ DÀNH CHO ADMIN ===
-  async function loadAdminUsers() {
-      setIsLoadingAdmin(true);
-      const res = await layDanhSachTaiKhoan();
-      if (res.success) {
-          setAdminUsers(res.data);
-      } else {
-          alert("Lỗi lấy danh sách: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminCreateUser(e) {
-      e.preventDefault();
-      if (!adminForm.email || !adminForm.password) return;
-      setIsLoadingAdmin(true);
-      const res = await taoTaiKhoanMoi(adminForm.email, adminForm.password, adminForm.role);
-      if (res.success) {
-          setAdminForm({ email: '', password: '', role: 'viewer' });
-          await loadAdminUsers();
-      } else {
-          alert("Lỗi tạo tài khoản: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminDeleteUser(id) {
-      if (!confirm('Xóa vĩnh viễn tài khoản này?')) return;
-      setIsLoadingAdmin(true);
-      const res = await xoaTaiKhoan(id);
-      if (res.success) await loadAdminUsers();
-      else alert("Lỗi xóa tài khoản: " + res.message);
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminChangeRole(id, newRole) {
-      setIsLoadingAdmin(true);
-      const res = await doiQuyenTaiKhoan(id, newRole);
-      if (res.success) await loadAdminUsers();
-      else alert("Lỗi đổi quyền: " + res.message);
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminResetPassword(id) {
-      if (!newPasswordTemp.trim()) return;
-      setIsLoadingAdmin(true);
-      const res = await datLaiMatKhau(id, newPasswordTemp);
-      if (res.success) {
-          setEditingPasswordId(null);
-          setNewPasswordTemp('');
-          alert("Đổi mật khẩu thành công!");
-      } else {
-          alert("Lỗi đổi mật khẩu: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-// === CÁC HÀM XỬ LÝ DÀNH CHO ADMIN ===
-  async function loadAdminUsers() {
-      setIsLoadingAdmin(true);
-      const res = await layDanhSachTaiKhoan();
-      if (res.success) {
-          setAdminUsers(res.data);
-      } else {
-          alert("Lỗi lấy danh sách: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminCreateUser(e) {
-      e.preventDefault();
-      if (!adminForm.email || !adminForm.password) return;
-      setIsLoadingAdmin(true);
-      const res = await taoTaiKhoanMoi(adminForm.email, adminForm.password, adminForm.role);
-      if (res.success) {
-          setAdminForm({ email: '', password: '', role: 'viewer' });
-          await loadAdminUsers();
-      } else {
-          alert("Lỗi tạo tài khoản: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminDeleteUser(id) {
-      if (!confirm('Xóa vĩnh viễn tài khoản này?')) return;
-      setIsLoadingAdmin(true);
-      const res = await xoaTaiKhoan(id);
-      if (res.success) await loadAdminUsers();
-      else alert("Lỗi xóa tài khoản: " + res.message);
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminChangeRole(id, newRole) {
-      setIsLoadingAdmin(true);
-      const res = await doiQuyenTaiKhoan(id, newRole);
-      if (res.success) await loadAdminUsers();
-      else alert("Lỗi đổi quyền: " + res.message);
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminResetPassword(id) {
-      if (!newPasswordTemp.trim()) return;
-      setIsLoadingAdmin(true);
-      const res = await datLaiMatKhau(id, newPasswordTemp);
-      if (res.success) {
-          setEditingPasswordId(null);
-          setNewPasswordTemp('');
-          alert("Đổi mật khẩu thành công!");
-      } else {
-          alert("Lỗi đổi mật khẩu: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-// === CÁC HÀM XỬ LÝ DÀNH CHO ADMIN ===
-  async function loadAdminUsers() {
-      setIsLoadingAdmin(true);
-      const res = await layDanhSachTaiKhoan();
-      if (res.success) {
-          setAdminUsers(res.data);
-      } else {
-          alert("Lỗi lấy danh sách: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminCreateUser(e) {
-      e.preventDefault();
-      if (!adminForm.email || !adminForm.password) return;
-      setIsLoadingAdmin(true);
-      const res = await taoTaiKhoanMoi(adminForm.email, adminForm.password, adminForm.role);
-      if (res.success) {
-          setAdminForm({ email: '', password: '', role: 'viewer' });
-          await loadAdminUsers();
-      } else {
-          alert("Lỗi tạo tài khoản: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminDeleteUser(id) {
-      if (!confirm('Xóa vĩnh viễn tài khoản này?')) return;
-      setIsLoadingAdmin(true);
-      const res = await xoaTaiKhoan(id);
-      if (res.success) await loadAdminUsers();
-      else alert("Lỗi xóa tài khoản: " + res.message);
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminChangeRole(id, newRole) {
-      setIsLoadingAdmin(true);
-      const res = await doiQuyenTaiKhoan(id, newRole);
-      if (res.success) await loadAdminUsers();
-      else alert("Lỗi đổi quyền: " + res.message);
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminResetPassword(id) {
-      if (!newPasswordTemp.trim()) return;
-      setIsLoadingAdmin(true);
-      const res = await datLaiMatKhau(id, newPasswordTemp);
-      if (res.success) {
-          setEditingPasswordId(null);
-          setNewPasswordTemp('');
-          alert("Đổi mật khẩu thành công!");
-      } else {
-          alert("Lỗi đổi mật khẩu: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-// === CÁC HÀM XỬ LÝ DÀNH CHO ADMIN ===
-  async function loadAdminUsers() {
-      setIsLoadingAdmin(true);
-      const res = await layDanhSachTaiKhoan();
-      if (res.success) {
-          setAdminUsers(res.data);
-      } else {
-          alert("Lỗi lấy danh sách: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminCreateUser(e) {
-      e.preventDefault();
-      if (!adminForm.email || !adminForm.password) return;
-      setIsLoadingAdmin(true);
-      const res = await taoTaiKhoanMoi(adminForm.email, adminForm.password, adminForm.role);
-      if (res.success) {
-          setAdminForm({ email: '', password: '', role: 'viewer' });
-          await loadAdminUsers();
-      } else {
-          alert("Lỗi tạo tài khoản: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminDeleteUser(id) {
-      if (!confirm('Xóa vĩnh viễn tài khoản này?')) return;
-      setIsLoadingAdmin(true);
-      const res = await xoaTaiKhoan(id);
-      if (res.success) await loadAdminUsers();
-      else alert("Lỗi xóa tài khoản: " + res.message);
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminChangeRole(id, newRole) {
-      setIsLoadingAdmin(true);
-      const res = await doiQuyenTaiKhoan(id, newRole);
-      if (res.success) await loadAdminUsers();
-      else alert("Lỗi đổi quyền: " + res.message);
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminResetPassword(id) {
-      if (!newPasswordTemp.trim()) return;
-      setIsLoadingAdmin(true);
-      const res = await datLaiMatKhau(id, newPasswordTemp);
-      if (res.success) {
-          setEditingPasswordId(null);
-          setNewPasswordTemp('');
-          alert("Đổi mật khẩu thành công!");
-      } else {
-          alert("Lỗi đổi mật khẩu: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-  // === CÁC HÀM XỬ LÝ DÀNH CHO ADMIN ===
-  async function loadAdminUsers() {
-      setIsLoadingAdmin(true);
-      const res = await layDanhSachTaiKhoan();
-      if (res.success) {
-          setAdminUsers(res.data);
-      } else {
-          alert("Lỗi lấy danh sách: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminCreateUser(e) {
-      e.preventDefault();
-      if (!adminForm.email || !adminForm.password) return;
-      setIsLoadingAdmin(true);
-      const res = await taoTaiKhoanMoi(adminForm.email, adminForm.password, adminForm.role);
-      if (res.success) {
-          setAdminForm({ email: '', password: '', role: 'viewer' });
-          await loadAdminUsers();
-      } else {
-          alert("Lỗi tạo tài khoản: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminDeleteUser(id) {
-      if (!confirm('Xóa vĩnh viễn tài khoản này?')) return;
-      setIsLoadingAdmin(true);
-      const res = await xoaTaiKhoan(id);
-      if (res.success) await loadAdminUsers();
-      else alert("Lỗi xóa tài khoản: " + res.message);
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminChangeRole(id, newRole) {
-      setIsLoadingAdmin(true);
-      const res = await doiQuyenTaiKhoan(id, newRole);
-      if (res.success) await loadAdminUsers();
-      else alert("Lỗi đổi quyền: " + res.message);
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminResetPassword(id) {
-      if (!newPasswordTemp.trim()) return;
-      setIsLoadingAdmin(true);
-      const res = await datLaiMatKhau(id, newPasswordTemp);
-      if (res.success) {
-          setEditingPasswordId(null);
-          setNewPasswordTemp('');
-          alert("Đổi mật khẩu thành công!");
-      } else {
-          alert("Lỗi đổi mật khẩu: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-// === CÁC HÀM XỬ LÝ DÀNH CHO ADMIN ===
-  async function loadAdminUsers() {
-      setIsLoadingAdmin(true);
-      const res = await layDanhSachTaiKhoan();
-      if (res.success) {
-          setAdminUsers(res.data);
-      } else {
-          alert("Lỗi lấy danh sách: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminCreateUser(e) {
-      e.preventDefault();
-      if (!adminForm.email || !adminForm.password) return;
-      setIsLoadingAdmin(true);
-      const res = await taoTaiKhoanMoi(adminForm.email, adminForm.password, adminForm.role);
-      if (res.success) {
-          setAdminForm({ email: '', password: '', role: 'viewer' });
-          await loadAdminUsers();
-      } else {
-          alert("Lỗi tạo tài khoản: " + res.message);
-      }
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminDeleteUser(id) {
-      if (!confirm('Xóa vĩnh viễn tài khoản này?')) return;
-      setIsLoadingAdmin(true);
-      const res = await xoaTaiKhoan(id);
-      if (res.success) await loadAdminUsers();
-      else alert("Lỗi xóa tài khoản: " + res.message);
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminChangeRole(id, newRole) {
-      setIsLoadingAdmin(true);
-      const res = await doiQuyenTaiKhoan(id, newRole);
-      if (res.success) await loadAdminUsers();
-      else alert("Lỗi đổi quyền: " + res.message);
-      setIsLoadingAdmin(false);
-  }
-
-  async function handleAdminResetPassword(id) {
-      if (!newPasswordTemp.trim()) return;
-      setIsLoadingAdmin(true);
-      const res = await datLaiMatKhau(id, newPasswordTemp);
-      if (res.success) {
-          setEditingPasswordId(null);
-          setNewPasswordTemp('');
-          alert("Đổi mật khẩu thành công!");
-      } else {
-          alert("Lỗi đổi mật khẩu: " + res.message);
-      }
-      setIsLoadingAdmin(false);
+  // HÀM MỚI: CHUYỂN TRẠNG THÁI BẰNG TAY (DÀNH CHO ĐIỆN THOẠI)
+  async function handleManualStatusChange(taskId, newStatus) {
+    const quyenSua = isEditor || currentSpace === 'private';
+    if (!quyenSua) return;
+    const isCompleted = newStatus === 'done';
+    const updatedTask = { ...viewingTask, status: newStatus, is_completed: isCompleted };
+    
+    setViewingTask(updatedTask);
+    setTasks(prevTasks => prevTasks.map(t => t.id === taskId ? { ...t, status: newStatus, is_completed: isCompleted } : t));
+    
+    await supabase.from('tasks').update({ status: newStatus, is_completed: isCompleted }).eq('id', taskId);
+    await taiDuLieuHienTai();
   }
 
   const bgMain = theme === 'dark' ? 'bg-[#0b0c10]' : 'bg-liquid-light';
@@ -1233,7 +847,6 @@ async function thucHienXoaTask() {
   const textMain = theme === 'dark' ? 'text-white' : 'text-slate-800';
   const textMuted = theme === 'dark' ? 'text-slate-400' : 'text-slate-500';
   const cardBg = theme === 'dark' ? 'bg-white/5 border border-white/5' : 'bg-white border border-gray-100 shadow-sm';
-
   return (
     <>
 <style dangerouslySetInnerHTML={{__html: `
@@ -1835,8 +1448,24 @@ async function thucHienXoaTask() {
                               <div className="flex justify-end gap-2"><button onClick={() => setEditField(null)} className="px-3 py-1">Hủy</button><button onClick={() => saveInlineEdit('title')} className="px-3 py-1 bg-blue-600 text-white rounded-lg">Lưu</button></div>
                           </div>
                         ) : (
-                          <div className="flex justify-between items-start"><h2 className="text-xl font-normal leading-tight pr-8">{viewingTask.title}</h2>{quyenSua && <button onClick={() => { setEditField('title'); setTempValue(viewingTask.title); }} className={`opacity-0 group-hover:opacity-100 text-[10px] font-bold px-2 py-1 rounded shrink-0 ${theme === 'dark' ? 'bg-white/10 text-white hover:bg-blue-600' : 'bg-slate-200 text-blue-600'}`}>✎ Sửa</button>}</div>
+                       <div className="flex justify-between items-start"><h2 className="text-xl font-normal leading-tight pr-8">{viewingTask.title}</h2>{quyenSua && <button onClick={() => { setEditField('title'); setTempValue(viewingTask.title); }} className={`opacity-0 group-hover:opacity-100 text-[10px] font-bold px-2 py-1 rounded shrink-0 ${theme === 'dark' ? 'bg-white/10 text-white hover:bg-blue-600' : 'bg-slate-200 text-blue-600'}`}>✎ Sửa</button>}</div>
                         )}
+                      </div>
+
+                      {/* KHU VỰC CHUYỂN TRẠNG THÁI DÀNH CHO MOBILE */}
+                      <div className="flex items-center gap-3 p-3 rounded-xl border bg-blue-50/50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-500/20">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Trạng thái:</span>
+                        <select 
+                          disabled={!quyenSua}
+                          value={viewingTask.status || 'todo'}
+                          onChange={(e) => handleManualStatusChange(viewingTask.id, e.target.value)}
+                          className={`flex-1 text-xs font-bold p-2 rounded-lg outline-none border cursor-pointer appearance-none transition-colors ${theme === 'dark' ? 'bg-black/50 border-white/20 text-white focus:border-blue-500' : 'bg-white border-blue-200 text-blue-700 focus:border-blue-500'}`}
+                        >
+                          <option value="pending">Văn bản chờ</option>
+                          <option value="todo">Chưa làm</option>
+                          <option value="in_progress">Đang làm</option>
+                          <option value="done">Đã hoàn thành</option>
+                        </select>
                       </div>
                       
                       {/* HẠN CHÓT */}
