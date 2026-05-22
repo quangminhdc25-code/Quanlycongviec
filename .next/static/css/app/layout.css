@@ -505,6 +505,9 @@ video {
 .pointer-events-none {
   pointer-events: none;
 }
+.pointer-events-auto {
+  pointer-events: auto;
+}
 .fixed {
   position: fixed;
 }
@@ -559,6 +562,9 @@ video {
 .top-full {
   top: 100%;
 }
+.bottom-6 {
+  bottom: 1.5rem;
+}
 .z-10 {
   z-index: 10;
 }
@@ -591,6 +597,12 @@ video {
 }
 .z-\[60\] {
   z-index: 60;
+}
+.z-0 {
+  z-index: 0;
+}
+.z-\[70\] {
+  z-index: 70;
 }
 .m-0 {
   margin: 0px;
@@ -910,6 +922,15 @@ video {
 .animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+@keyframes spin {
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
 .cursor-grab {
   cursor: grab;
 }
@@ -1087,6 +1108,9 @@ video {
 .border-2 {
   border-width: 2px;
 }
+.border-4 {
+  border-width: 4px;
+}
 .border-b {
   border-bottom-width: 1px;
 }
@@ -1258,6 +1282,9 @@ video {
 .border-b-red-500 {
   --tw-border-opacity: 1;
   border-bottom-color: rgb(239 68 68 / var(--tw-border-opacity, 1));
+}
+.border-t-transparent {
+  border-top-color: transparent;
 }
 .bg-\[\#0b0c10\] {
   --tw-bg-opacity: 1;
@@ -2124,6 +2151,11 @@ body {
   --tw-translate-y: -0.125rem;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
+.hover\:scale-105:hover {
+  --tw-scale-x: 1.05;
+  --tw-scale-y: 1.05;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
 .hover\:border-blue-300:hover {
   --tw-border-opacity: 1;
   border-color: rgb(147 197 253 / var(--tw-border-opacity, 1));
@@ -2252,6 +2284,10 @@ body {
 }
 .hover\:bg-yellow-500\/40:hover {
   background-color: rgb(234 179 8 / 0.4);
+}
+.hover\:bg-black:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(0 0 0 / var(--tw-bg-opacity, 1));
 }
 .hover\:text-blue-400:hover {
   --tw-text-opacity: 1;
@@ -2614,6 +2650,10 @@ body {
 
   .dark\:bg-white\/10 {
     background-color: rgb(255 255 255 / 0.1);
+  }
+
+  .dark\:bg-black\/50 {
+    background-color: rgb(0 0 0 / 0.5);
   }
 
   .dark\:text-blue-400 {

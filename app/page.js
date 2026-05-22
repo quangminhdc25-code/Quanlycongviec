@@ -1409,7 +1409,19 @@ const handleTaskMouseEnter = (e, task) => {
             </div>
                 <div className="flex-1 w-full bg-slate-100 dark:bg-[#0b0c10] relative">
 {selectedFile.name.toLowerCase().match(/\.(doc|docx|xls|xlsx|ppt|pptx|pdf)$/i) ? (
-                        <iframe src={selectedFile.name.toLowerCase().endsWith('pdf') ? `https://docs.google.com/gview?url=${encodeURIComponent(selectedFile.url)}&embedded=true` : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url)}`} className="w-full h-full border-none bg-white" />
+                        <div className="relative w-full h-full bg-slate-100 dark:bg-black/50 flex flex-col justify-center items-center overflow-hidden">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-0 opacity-50">
+                                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                                <p className="text-xs font-bold">Đang kết nối máy chủ đọc file...</p>
+                            </div>
+                            <div className="absolute bottom-6 left-0 right-0 flex justify-center z-[70] pointer-events-none">
+                                <a href={selectedFile.url} target="_blank" className="pointer-events-auto px-5 py-2.5 rounded-full bg-black/80 hover:bg-black text-white text-xs font-bold shadow-2xl backdrop-blur-md flex items-center gap-2 border border-white/20 transition-transform hover:scale-105">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                    Mở trực tiếp (Tốc độ cao)
+                                </a>
+                            </div>
+                            <iframe src={selectedFile.name.toLowerCase().endsWith('pdf') ? `https://docs.google.com/gview?url=${encodeURIComponent(selectedFile.url)}&embedded=true` : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url)}`} className="w-full h-full border-none bg-white relative z-10" />
+                        </div>
                     ) : selectedFile.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                         <div className="w-full h-full flex items-center justify-center p-6"><img src={selectedFile.url} className="max-w-full max-h-full object-contain rounded-xl shadow-lg" /></div>
                     ) : selectedFile.name.toLowerCase().match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i) ? (
@@ -1569,8 +1581,22 @@ const handleTaskMouseEnter = (e, task) => {
                           Phóng to
                         </button>
                         
-                        {selectedFile.name.toLowerCase().match(/\.(doc|docx|xls|xlsx|ppt|pptx|pdf)$/i) ? (
-                            <iframe src={selectedFile.name.toLowerCase().endsWith('pdf') ? `https://docs.google.com/gview?url=${encodeURIComponent(selectedFile.url)}&embedded=true` : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url)}`} className="w-full h-full border-none bg-white rounded-br-2xl" />
+{selectedFile.name.toLowerCase().match(/\.(doc|docx|xls|xlsx|ppt|pptx|pdf)$/i) ? (
+                            <div className="relative w-full h-full bg-slate-100 dark:bg-black/50 flex flex-col justify-center items-center overflow-hidden rounded-br-2xl">
+                                {/* Hiệu ứng xoay báo đang tải */}
+                                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-0 opacity-50">
+                                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                                    <p className="text-xs font-bold">Đang kết nối máy chủ...</p>
+                                </div>
+                                {/* Nút Mở Trực Tiếp chống lỗi màn hình trắng */}
+                                <div className="absolute bottom-6 left-0 right-0 flex justify-center z-[70] pointer-events-none">
+                                    <a href={selectedFile.url} target="_blank" className="pointer-events-auto px-5 py-2.5 rounded-full bg-black/80 hover:bg-black text-white text-xs font-bold shadow-2xl backdrop-blur-md flex items-center gap-2 border border-white/20 transition-transform hover:scale-105">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                        Mở trực tiếp (Tốc độ cao)
+                                    </a>
+                                </div>
+                                <iframe src={selectedFile.name.toLowerCase().endsWith('pdf') ? `https://docs.google.com/gview?url=${encodeURIComponent(selectedFile.url)}&embedded=true` : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url)}`} className="w-full h-full border-none bg-white relative z-10" />
+                            </div>
                         ) : selectedFile.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                             <div className="flex-1 flex items-center justify-center p-6"><img src={selectedFile.url} className="max-w-full max-h-full object-contain rounded-xl shadow-lg" /></div>
                         ) : selectedFile.name.toLowerCase().match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i) ? (
