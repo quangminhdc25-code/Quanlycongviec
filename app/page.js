@@ -1394,16 +1394,19 @@ const handleTaskMouseEnter = (e, task) => {
         {modalType === 'file_viewer' && selectedFile && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-10 bg-black/80 backdrop-blur-sm animate-in zoom-in-95 duration-200">
              <div className="relative w-full max-w-5xl h-full flex flex-col bg-[#121212] rounded-2xl overflow-hidden shadow-2xl border border-white/10">
-                <div className="flex justify-between items-center p-4 border-b border-white/10 bg-black/50 shrink-0">
-                   <div className="flex items-center gap-3">
-                      {getFileIcon(selectedFile.name, 'small')}
-                      <span className="text-white font-bold text-sm truncate">{selectedFile.name}</span>
-                   </div>
-                   <div className="flex items-center gap-3">
-                      <a href={selectedFile.url} target="_blank" className="px-4 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors">Tải xuống</a>
-                      <button onClick={() => { if (viewingTask) { setModalType('task_view'); } else { setModalType(null); setSelectedFile(null); } }} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-red-500 text-white transition-colors shadow-lg">✕</button>
-                   </div>
-                </div>
+{/* THANH HEADER CHỐNG CO RÚT - ĐẢM BẢO LUÔN HIỆN ĐỦ NÚT BẤM TRÊN MOBILE */}
+            <div className="flex justify-between items-center p-3 sm:p-4 border-b border-white/10 bg-black/50 shrink-0 gap-3 w-full min-w-0">
+               {/* Khối tên tệp được giới hạn min-w-0 để tự động cắt ngắn bằng dấu ... nếu quá dài */}
+               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                  {getFileIcon(selectedFile.name, 'small')}
+                  <span className="text-white font-bold text-xs sm:text-sm truncate" title={selectedFile.name}>{selectedFile.name}</span>
+               </div>
+               {/* Khối nút bấm được khóa cứng shrink-0 để không bao giờ bị chèn ép */}
+               <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                  <a href={selectedFile.url} target="_blank" className="px-3 py-1.5 sm:px-4 sm:py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-[11px] sm:text-xs font-bold transition-colors whitespace-nowrap">Tải xuống</a>
+                  <button onClick={() => { if (viewingTask) { setModalType('task_view'); } else { setModalType(null); setSelectedFile(null); } }} className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-red-500 text-white transition-colors shadow-lg shrink-0 text-xs sm:text-sm">✕</button>
+               </div>
+            </div>
                 <div className="flex-1 w-full bg-slate-100 dark:bg-[#0b0c10] relative">
 {selectedFile.name.toLowerCase().match(/\.(doc|docx|xls|xlsx|ppt|pptx|pdf)$/i) ? (
                         <iframe src={selectedFile.name.toLowerCase().endsWith('pdf') ? `https://docs.google.com/gview?url=${encodeURIComponent(selectedFile.url)}&embedded=true` : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url)}`} className="w-full h-full border-none bg-white" />
@@ -1572,8 +1575,12 @@ const handleTaskMouseEnter = (e, task) => {
                             <div className="flex-1 flex items-center justify-center p-6"><img src={selectedFile.url} className="max-w-full max-h-full object-contain rounded-xl shadow-lg" /></div>
                         ) : selectedFile.name.toLowerCase().match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i) ? (
                             <div className="flex-1 flex items-center justify-center p-0 bg-black/95 rounded-br-2xl overflow-hidden"><video src={selectedFile.url} controls autoPlay className="w-full h-full object-contain outline-none shadow-2xl" /></div>
-                        ) : (
-                            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center"><div className="mb-6">{getFileIcon(selectedFile.name, 'large')}</div><p className="text-lg mb-6">{selectedFile.name}</p><a href={selectedFile.url} target="_blank" className="px-6 py-3 rounded-full bg-blue-600 text-white font-bold shadow-md">Tải xuống</a></div>
+) : (
+                          <div className="flex-1 flex flex-col items-center justify-center p-4 text-center text-slate-500 max-h-full overflow-hidden">
+                              <div className="mb-3 scale-90 sm:scale-100">{getFileIcon(selectedFile.name, 'large')}</div>
+                              <p className="text-xs sm:text-sm font-semibold max-w-xs break-words mb-4 line-clamp-2 px-2">{selectedFile.name}</p>
+                              <a href={selectedFile.url} target="_blank" className="px-5 py-2.5 rounded-full bg-blue-600 text-white text-xs font-bold shadow-md hover:bg-blue-700 transition-colors whitespace-nowrap shrink-0">Tải xuống</a>
+                          </div>
                         )}
                       </div>
                     ) : (
