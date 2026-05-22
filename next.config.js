@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Cho phép Server Actions hoạt động trên môi trường Cloud IDE (Codespaces)
+  // Cấu hình cho phép Server Actions hoạt động
   experimental: {
     serverActions: {
       allowedOrigins: [
@@ -9,6 +9,30 @@ const nextConfig = {
         '*.app.github.dev'
       ],
     },
+  },
+  
+  // === "BÙA CHÚ" CHỐNG LƯU BỘ NHỚ ĐỆM (CACHE BUSTER) ===
+  async headers() {
+    return [
+      {
+        // Áp dụng cho toàn bộ các trang web (.*)
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
+          },
+        ],
+      },
+    ];
   },
 };
 

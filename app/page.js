@@ -678,7 +678,10 @@ async function thucHienXoaTask() {
       mousePosRef.current = { x: e.clientX, y: e.clientY };
   };
 
-  const handleTaskMouseEnter = (e, task) => {
+const handleTaskMouseEnter = (e, task) => {
+      // KHÓA BẢO VỆ: Nếu là màn hình điện thoại hoặc máy tính bảng (< 1024px), từ chối hiện Tooltip!
+      if (typeof window !== 'undefined' && window.innerWidth < 1024) return;
+
       mousePosRef.current = { x: e.clientX, y: e.clientY };
       if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
       

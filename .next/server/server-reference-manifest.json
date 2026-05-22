@@ -1,46 +1,5 @@
 {
-  "node": {
-    "45fbb705ffa4886ce7838d1b0856b40586ca2be1": {
-      "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2Fworkspaces%2FQuanlycongviec%2Fapp%2Factions%2FadminAuth.js%22%2C%5B%22doiQuyenTaiKhoan%22%2C%22taoTaiKhoanMoi%22%2C%22xoaTaiKhoan%22%2C%22layDanhSachTaiKhoan%22%2C%22datLaiMatKhau%22%5D%5D%5D&__client_imported__=true!"
-      },
-      "layer": {
-        "app/page": "action-browser"
-      }
-    },
-    "9078b7f541cfd6378d24f580135c3f2fb5078c4e": {
-      "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2Fworkspaces%2FQuanlycongviec%2Fapp%2Factions%2FadminAuth.js%22%2C%5B%22doiQuyenTaiKhoan%22%2C%22taoTaiKhoanMoi%22%2C%22xoaTaiKhoan%22%2C%22layDanhSachTaiKhoan%22%2C%22datLaiMatKhau%22%5D%5D%5D&__client_imported__=true!"
-      },
-      "layer": {
-        "app/page": "action-browser"
-      }
-    },
-    "9f0d39af00bb1806cdd19a112682908f21aaf1aa": {
-      "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2Fworkspaces%2FQuanlycongviec%2Fapp%2Factions%2FadminAuth.js%22%2C%5B%22doiQuyenTaiKhoan%22%2C%22taoTaiKhoanMoi%22%2C%22xoaTaiKhoan%22%2C%22layDanhSachTaiKhoan%22%2C%22datLaiMatKhau%22%5D%5D%5D&__client_imported__=true!"
-      },
-      "layer": {
-        "app/page": "action-browser"
-      }
-    },
-    "abf2abf9de7359b9c3f3ba8438d29b099c647f87": {
-      "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2Fworkspaces%2FQuanlycongviec%2Fapp%2Factions%2FadminAuth.js%22%2C%5B%22doiQuyenTaiKhoan%22%2C%22taoTaiKhoanMoi%22%2C%22xoaTaiKhoan%22%2C%22layDanhSachTaiKhoan%22%2C%22datLaiMatKhau%22%5D%5D%5D&__client_imported__=true!"
-      },
-      "layer": {
-        "app/page": "action-browser"
-      }
-    },
-    "ce3da4320ef9e07d4f0539c44abfc7f4d83a04a4": {
-      "workers": {
-        "app/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2Fworkspaces%2FQuanlycongviec%2Fapp%2Factions%2FadminAuth.js%22%2C%5B%22doiQuyenTaiKhoan%22%2C%22taoTaiKhoanMoi%22%2C%22xoaTaiKhoan%22%2C%22layDanhSachTaiKhoan%22%2C%22datLaiMatKhau%22%5D%5D%5D&__client_imported__=true!"
-      },
-      "layer": {
-        "app/page": "action-browser"
-      }
-    }
-  },
+  "node": {},
   "edge": {},
-  "encryptionKey": "9un4gNit572+MK9wdojqRTZ1YY5V/ZG7e8gh5reT0OM="
+  "encryptionKey": "1/6QnRATkAwKx8uKbTAb2EpGQA/lUBgLIF3QbJ545Kc="
 }
