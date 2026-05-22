@@ -1401,7 +1401,7 @@ const handleTaskMouseEnter = (e, task) => {
                    </div>
                    <div className="flex items-center gap-3">
                       <a href={selectedFile.url} target="_blank" className="px-4 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors">Tải xuống</a>
-                      <button onClick={() => { setModalType(null); setSelectedFile(null); }} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-red-500 text-white transition-colors">✕</button>
+                      <button onClick={() => { if (viewingTask) { setModalType('task_view'); } else { setModalType(null); setSelectedFile(null); } }} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-red-500 text-white transition-colors shadow-lg">✕</button>
                    </div>
                 </div>
                 <div className="flex-1 w-full bg-slate-100 dark:bg-[#0b0c10] relative">
@@ -1557,18 +1557,25 @@ const handleTaskMouseEnter = (e, task) => {
                       </div>
                   </div>
                   
-                 <div className={`w-full md:w-[55%] shrink-0 h-[40vh] md:h-auto flex flex-col relative pt-6 md:pt-6 ${theme === 'dark' ? 'bg-[#121212]' : 'bg-slate-100'}`} onMouseDown={(e) => e.stopPropagation()}>
-                    {/* Đã xóa nút tắt cũ ở đây */}
+<div className={`w-full md:w-[55%] shrink-0 h-[40vh] md:h-auto flex flex-col relative pt-6 md:pt-6 ${theme === 'dark' ? 'bg-[#121212]' : 'bg-slate-100'}`} onMouseDown={(e) => e.stopPropagation()}>
                     {selectedFile ? (
-                      selectedFile.name.toLowerCase().match(/\.(doc|docx|xls|xlsx|ppt|pptx|pdf)$/i) ? (
-                          <iframe src={selectedFile.name.toLowerCase().endsWith('pdf') ? `https://docs.google.com/gview?url=${encodeURIComponent(selectedFile.url)}&embedded=true` : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url)}`} className="w-full h-full border-none bg-white rounded-br-2xl" />
-                      ) : selectedFile.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                          <div className="flex-1 flex items-center justify-center p-6"><img src={selectedFile.url} className="max-w-full max-h-full object-contain rounded-xl shadow-lg" /></div>
-                      ) : selectedFile.name.toLowerCase().match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i) ? (
-                          <div className="flex-1 flex items-center justify-center p-0 bg-black/95 rounded-br-2xl overflow-hidden"><video src={selectedFile.url} controls autoPlay className="w-full h-full object-contain outline-none shadow-2xl" /></div>
-                      ) : (
-                          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center"><div className="mb-6">{getFileIcon(selectedFile.name, 'large')}</div><p className="text-lg mb-6">{selectedFile.name}</p><a href={selectedFile.url} target="_blank" className="px-6 py-3 rounded-full bg-blue-600 text-white font-bold shadow-md">Tải xuống</a></div>
-                      )
+                      <div className="relative w-full h-full flex flex-col group/preview">
+                        {/* NÚT PHÓNG TO TOÀN MÀN HÌNH NỔI BẬT */}
+                        <button onClick={() => setModalType('file_viewer')} className="absolute top-4 right-4 z-[60] bg-black/70 hover:bg-blue-600 text-white px-4 py-2 rounded-full backdrop-blur-md shadow-2xl text-xs font-bold flex items-center gap-2 transition-all">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" /></svg>
+                          Phóng to
+                        </button>
+                        
+                        {selectedFile.name.toLowerCase().match(/\.(doc|docx|xls|xlsx|ppt|pptx|pdf)$/i) ? (
+                            <iframe src={selectedFile.name.toLowerCase().endsWith('pdf') ? `https://docs.google.com/gview?url=${encodeURIComponent(selectedFile.url)}&embedded=true` : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url)}`} className="w-full h-full border-none bg-white rounded-br-2xl" />
+                        ) : selectedFile.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                            <div className="flex-1 flex items-center justify-center p-6"><img src={selectedFile.url} className="max-w-full max-h-full object-contain rounded-xl shadow-lg" /></div>
+                        ) : selectedFile.name.toLowerCase().match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i) ? (
+                            <div className="flex-1 flex items-center justify-center p-0 bg-black/95 rounded-br-2xl overflow-hidden"><video src={selectedFile.url} controls autoPlay className="w-full h-full object-contain outline-none shadow-2xl" /></div>
+                        ) : (
+                            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center"><div className="mb-6">{getFileIcon(selectedFile.name, 'large')}</div><p className="text-lg mb-6">{selectedFile.name}</p><a href={selectedFile.url} target="_blank" className="px-6 py-3 rounded-full bg-blue-600 text-white font-bold shadow-md">Tải xuống</a></div>
+                        )}
+                      </div>
                     ) : (
                       <div className="flex-1 flex flex-col items-center justify-center opacity-30"><div className="text-5xl mb-4">👁️</div><p className="text-xs font-semibold">Chọn tài liệu bên trái để xem trước</p></div>
                     )}
