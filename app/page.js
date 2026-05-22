@@ -204,12 +204,15 @@ const [deletingTaskId, setDeletingTaskId] = useState(null);
       window.location.href = '/login';
   };
 
-  useEffect(() => {
+useEffect(() => {
     if (modalType === 'task_view' && modalRef.current) {
         const el = modalRef.current;
         if (el.dataset.initialized !== 'true') {
-            const w = Math.min(1152, window.innerWidth * 0.95);
-            const h = window.innerHeight * 0.85;
+            const isMobile = window.innerWidth < 768;
+            // Điện thoại: Bung rộng 95%, cao 92% (chuẩn App). Máy tính: Giữ tỷ lệ cũ.
+            const w = isMobile ? window.innerWidth * 0.95 : Math.min(1152, window.innerWidth * 0.95);
+            const h = isMobile ? window.innerHeight * 0.92 : window.innerHeight * 0.85;
+            
             const x = (window.innerWidth - w) / 2;
             const y = (window.innerHeight - h) / 2;
             
@@ -1429,20 +1432,23 @@ const handleTaskMouseEnter = (e, task) => {
             
             return (
               <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-                <div 
+<div 
                   ref={modalRef}
                   className={`absolute flex flex-col md:flex-row rounded-2xl overflow-hidden shadow-2xl border animate-in zoom-in-95 duration-200 ${theme === 'dark' ? 'bg-[#1a1a24]/95 border-white/10 text-white' : 'bg-white/95 border-white/50 text-slate-800'}`}
-                  style={{ resize: 'both', minWidth: '600px', minHeight: '400px' }}
+                  style={{ resize: typeof window !== 'undefined' && window.innerWidth >= 768 ? 'both' : 'none', minWidth: '320px' }}
                 >
+                  {/* NÚT "X" ĐƯỢC DỜI LÊN ĐỈNH ĐỂ LUÔN NHÌN THẤY TRÊN ĐIỆN THOẠI */}
+                  <button onClick={dongModalTask} className={`absolute top-8 right-3 md:top-6 md:right-4 z-[150] w-8 h-8 rounded-full shadow-lg flex items-center justify-center font-bold transition-colors ${theme === 'dark' ? 'bg-white/10 hover:bg-red-500 text-white' : 'bg-white/90 hover:bg-red-50 text-red-500'}`}>✕</button>
+
                   <div 
                      className={`absolute top-0 left-0 w-full h-6 cursor-move flex items-center justify-center z-[110] transition-colors ${theme === 'dark' ? 'bg-black/40 hover:bg-black/60' : 'bg-slate-200 hover:bg-slate-300'}`}
                      onMouseDown={handleModalDragStart}
-                     title="Kéo thả để di chuyển"
+                     title="Kéo thả để di chuyển (Chỉ hỗ trợ máy tính)"
                   >
                       <div className="w-10 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500"></div>
                   </div>
   
-                  <div className={`w-full md:w-[45%] flex flex-col border-r ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'} p-6 pt-10 space-y-6 overflow-y-auto custom-scrollbar`} onMouseDown={(e) => e.stopPropagation()}>
+                 <div className={`flex-1 md:flex-none w-full md:w-[45%] flex flex-col border-b md:border-b-0 md:border-r ${theme === 'dark' ? 'border-white/10' : 'border-gray-200'} p-4 md:p-6 pt-10 space-y-6 overflow-y-auto custom-scrollbar`} onMouseDown={(e) => e.stopPropagation()}>
                       
                       <div className="group relative">
                         {editField === 'title' && quyenSua ? (
@@ -1551,9 +1557,9 @@ const handleTaskMouseEnter = (e, task) => {
                       </div>
                   </div>
                   
-                  <div className={`w-full md:w-[55%] flex flex-col relative pt-6 ${theme === 'dark' ? 'bg-[#121212]' : 'bg-slate-100'}`} onMouseDown={(e) => e.stopPropagation()}>
-                    <button onClick={dongModalTask} className={`absolute top-6 right-4 z-[120] w-8 h-8 rounded-full shadow-md flex items-center justify-center font-bold transition-colors ${theme === 'dark' ? 'bg-white/10 hover:bg-red-500 text-white' : 'bg-white/80 hover:bg-red-50 hover:text-red-600'}`}>✕</button>
-{selectedFile ? (
+                 <div className={`w-full md:w-[55%] shrink-0 h-[40vh] md:h-auto flex flex-col relative pt-6 md:pt-6 ${theme === 'dark' ? 'bg-[#121212]' : 'bg-slate-100'}`} onMouseDown={(e) => e.stopPropagation()}>
+                    {/* Đã xóa nút tắt cũ ở đây */}
+                    {selectedFile ? (
                       selectedFile.name.toLowerCase().match(/\.(doc|docx|xls|xlsx|ppt|pptx|pdf)$/i) ? (
                           <iframe src={selectedFile.name.toLowerCase().endsWith('pdf') ? selectedFile.url : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url)}`} className="w-full h-full border-none bg-white rounded-br-2xl" />
                       ) : selectedFile.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
