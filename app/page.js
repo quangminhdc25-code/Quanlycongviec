@@ -1406,7 +1406,7 @@ const handleTaskMouseEnter = (e, task) => {
                 </div>
                 <div className="flex-1 w-full bg-slate-100 dark:bg-[#0b0c10] relative">
 {selectedFile.name.toLowerCase().match(/\.(doc|docx|xls|xlsx|ppt|pptx|pdf)$/i) ? (
-                        <iframe src={selectedFile.name.toLowerCase().endsWith('pdf') ? selectedFile.url : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url)}`} className="w-full h-full border-none bg-white" />
+                        <iframe src={selectedFile.name.toLowerCase().endsWith('pdf') ? `https://docs.google.com/gview?url=${encodeURIComponent(selectedFile.url)}&embedded=true` : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url)}`} className="w-full h-full border-none bg-white" />
                     ) : selectedFile.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                         <div className="w-full h-full flex items-center justify-center p-6"><img src={selectedFile.url} className="max-w-full max-h-full object-contain rounded-xl shadow-lg" /></div>
                     ) : selectedFile.name.toLowerCase().match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i) ? (
@@ -1561,7 +1561,7 @@ const handleTaskMouseEnter = (e, task) => {
                     {/* Đã xóa nút tắt cũ ở đây */}
                     {selectedFile ? (
                       selectedFile.name.toLowerCase().match(/\.(doc|docx|xls|xlsx|ppt|pptx|pdf)$/i) ? (
-                          <iframe src={selectedFile.name.toLowerCase().endsWith('pdf') ? selectedFile.url : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url)}`} className="w-full h-full border-none bg-white rounded-br-2xl" />
+                          <iframe src={selectedFile.name.toLowerCase().endsWith('pdf') ? `https://docs.google.com/gview?url=${encodeURIComponent(selectedFile.url)}&embedded=true` : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedFile.url)}`} className="w-full h-full border-none bg-white rounded-br-2xl" />
                       ) : selectedFile.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                           <div className="flex-1 flex items-center justify-center p-6"><img src={selectedFile.url} className="max-w-full max-h-full object-contain rounded-xl shadow-lg" /></div>
                       ) : selectedFile.name.toLowerCase().match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i) ? (

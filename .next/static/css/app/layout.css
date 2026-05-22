@@ -550,9 +550,6 @@ video {
 .top-4 {
   top: 1rem;
 }
-.top-6 {
-  top: 1.5rem;
-}
 .top-8 {
   top: 2rem;
 }
@@ -573,9 +570,6 @@ video {
 }
 .z-\[110\] {
   z-index: 110;
-}
-.z-\[120\] {
-  z-index: 120;
 }
 .z-\[150\] {
   z-index: 150;
@@ -720,6 +714,9 @@ video {
 .h-9 {
   height: 2.25rem;
 }
+.h-\[40vh\] {
+  height: 40vh;
+}
 .h-\[42px\] {
   height: 42px;
 }
@@ -731,9 +728,6 @@ video {
 }
 .h-screen {
   height: 100vh;
-}
-.h-\[40vh\] {
-  height: 40vh;
 }
 .max-h-\[400px\] {
   max-height: 400px;
