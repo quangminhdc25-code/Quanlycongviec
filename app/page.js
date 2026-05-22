@@ -678,29 +678,38 @@ async function thucHienXoaTask() {
       }
   }
   const handleTaskMouseMove = (e) => {
-      mousePosRef.current = { x: e.clientX, y: e.clientY };
+      // Đã vô hiệu hóa: Không cần ép bảng chạy theo đuôi chuột nữa
   };
 
-const handleTaskMouseEnter = (e, task) => {
-      // KHÓA BẢO VỆ: Nếu là màn hình điện thoại hoặc máy tính bảng (< 1024px), từ chối hiện Tooltip!
+  const handleTaskMouseEnter = (e, task) => {
+      // KHÓA BẢO VỆ: Không chạy trên Điện thoại/Tablet
       if (typeof window !== 'undefined' && window.innerWidth < 1024) return;
 
-      mousePosRef.current = { x: e.clientX, y: e.clientY };
+      // CHÌA KHÓA UX: Lấy tọa độ viền của chính THẺ CÔNG VIỆC, chứ không lấy tọa độ con trỏ chuột
+      const cardRect = e.currentTarget.getBoundingClientRect();
+
       if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-      
+
       hoverTimeoutRef.current = setTimeout(() => {
-          let left = mousePosRef.current.x + 15;
-          let top = mousePosRef.current.y + 15;
+          // 1. Mặc định: Gắn bảng hít sát vào mép BÊN PHẢI của thẻ
+          let left = cardRect.right + 12;
           
+          // 2. Căn đỉnh bảng ngang bằng với đỉnh của thẻ
+          let top = cardRect.top;
+
           if (typeof window !== 'undefined') {
-              if (left + 350 > window.innerWidth) left = mousePosRef.current.x - 350 - 15;
-              if (top + 400 > window.innerHeight) { 
-                  top = mousePosRef.current.y - 400 - 15;
-                  if (top < 10) top = 10;
+              // 3. Nếu thẻ nằm ở cột ngoài cùng bên phải (hết chỗ), lật bảng sang mép BÊN TRÁI của thẻ
+              if (left + 350 > window.innerWidth) {
+                  left = cardRect.left - 350 - 12;
+              }
+              // 4. Nếu thẻ nằm tuốt dưới đáy, đẩy bảng trồi lên trên để không bị cắt xén
+              if (top + 450 > window.innerHeight) {
+                  top = window.innerHeight - 480;
+                  if (top < 20) top = 20; // Giữ an toàn 20px so với mép trên trình duyệt
               }
           }
           setHoveredTaskInfo({ task, top, left });
-      }, 350); 
+      }, 500); // Nâng độ trễ lên nửa giây (500ms) để người dùng lướt chuột ngang qua không bị "nháy" bảng rác.
   };
 
   const handleTaskMouseLeave = () => {
